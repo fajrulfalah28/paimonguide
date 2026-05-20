@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: paimon-ner-service
+    env: python
+    rootDir: ner-service
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+
+  - type: web
+    name: paimon-guide
+    env: php
+    rootDir: paimon-guide
+    buildCommand: "composer install --no-dev --optimize-autoloader"
+    startCommand: "php -S 0.0.0.0:$PORT -t public"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: NER_SERVICE_URL
+        fromService:
+          type: web
+          name: paimon-ner-service
+          envVarKey: RENDER_EXTERNAL_URL
+        transform: "${value}/extract"
