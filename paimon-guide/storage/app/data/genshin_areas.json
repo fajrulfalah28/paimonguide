@@ -47,6 +47,18 @@
       "Windrest Peak": {
         "type": "Area",
         "sub_areas": ["Dornman Port", "Millhaven", "Old Sanatorium Site"]
+      },
+      "Temple of Space": {
+        "type": "Area",
+        "sub_areas": [
+          "Apathic Interval",
+          "Cage of Suchness",
+          "Desert Pavilion",
+          "Luyang Academy",
+          "Mahavaipulya Chamber",
+          "Path of the Forgotten World",
+          "Pillar Hall Central Zone"
+        ]
       }
     }
   },
@@ -363,7 +375,7 @@
       },
       "Liffey Region": {
         "type": "Area",
-        "sub_areas": ["Fortress of Meropide", "Mont Esus East"]
+        "sub_areas": ["Fortress of Meropide"]
       },
       "Fontaine Research Institute of Kinetic Energy Engineering Region": {
         "type": "Area",
@@ -407,10 +419,6 @@
           "Passage of Ianus",
           "Portus Anticus"
         ]
-      },
-      "Mont Esus": {
-        "type": "Area",
-        "sub_areas": []
       }
     }
   },
@@ -493,10 +501,6 @@
           "Villa Guiztli",
           "Wavey Bay"
         ]
-      },
-      "Night Kingdom": {
-        "type": "Area",
-        "sub_areas": []
       }
     }
   },
@@ -515,7 +519,7 @@
           "Starsand Shoal"
         ]
       },
-      "Hiisi Island": {
+      "Hiisi Isle": {
         "type": "Area",
         "sub_areas": [
           "Frostmoon Enclave",
