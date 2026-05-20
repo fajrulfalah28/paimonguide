@@ -22,36 +22,31 @@ class AreaPrerequisiteController extends Controller
         $userInput = $request->input('area_name');
 
         // 1. Call Python NER Microservice
+        $extractedArea = null;
         try {
             $nerUrl = env('NER_SERVICE_URL', 'http://127.0.0.1:5001/extract');
             if (!str_ends_with($nerUrl, '/extract')) {
                 $nerUrl = rtrim($nerUrl, '/') . '/extract';
             }
-            $nerResponse = Http::timeout(5)->post($nerUrl, [
+            $nerResponse = Http::timeout(30)->post($nerUrl, [
                 'text' => $userInput
             ]);
 
             if ($nerResponse->successful() && isset($nerResponse->json()['locations'])) {
                 $locations = $nerResponse->json()['locations'];
                 if (!empty($locations)) {
-                    // Use the first resolved location
                     $extractedArea = $locations[0];
-                } else {
-                    $extractedArea = null;
                 }
-            } else {
-                // Fallback to raw input if NER fails or returns nothing
-                $extractedArea = $userInput;
             }
         } catch (\Exception $e) {
-            // Fallback to raw input if service is down
-            $extractedArea = $userInput;
+            // NER service is down — return a friendly error rather than searching with raw input
         }
 
         if (!$extractedArea) {
             return response()->json([
-                'found' => false,
-                'message' => "Paimon couldn't find any recognizable locations in your message.",
+                'found'    => false,
+                'message'  => "Paimon couldn't recognise a location in your message. Try something like \"Enkanomiya\", \"Dragonspine\", or \"The Chasm\"!",
+                'ner_used' => true,
             ], 404);
         }
 
