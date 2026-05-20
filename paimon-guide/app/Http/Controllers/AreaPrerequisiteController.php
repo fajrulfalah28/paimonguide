@@ -24,6 +24,9 @@ class AreaPrerequisiteController extends Controller
         // 1. Call Python NER Microservice
         try {
             $nerUrl = env('NER_SERVICE_URL', 'http://127.0.0.1:5001/extract');
+            if (!str_ends_with($nerUrl, '/extract')) {
+                $nerUrl = rtrim($nerUrl, '/') . '/extract';
+            }
             $nerResponse = Http::timeout(5)->post($nerUrl, [
                 'text' => $userInput
             ]);

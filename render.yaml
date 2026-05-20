@@ -29,4 +29,3 @@ services:
           type: web
           name: paimon-ner-service
           envVarKey: RENDER_EXTERNAL_URL
-        transform: "${value}/extract"
