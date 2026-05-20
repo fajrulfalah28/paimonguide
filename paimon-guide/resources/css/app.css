@@ -434,6 +434,13 @@ body {
     font-weight: normal;
 }
 
+.quest-item {
+    display: block;
+    color: #4A5366;
+    font-weight: normal;
+    margin-top: 2px;
+}
+
 /* Response Card (user message — right aligned) */
 .response-card {
     display: flex;

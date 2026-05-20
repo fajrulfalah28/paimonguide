@@ -225,26 +225,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let reply = '';
                 if (data.prerequisite_quest) {
-                    // Scenario 1: Quest exists on the area
-                    let questText = '';
-                    if (Array.isArray(data.prerequisite_quest)) {
-                        if (data.prerequisite_quest.length === 0) {
-                            reply = `Ooh, no quest needed! We can go explore **${data.area_name}** in ${data.region} right away! Let's go see if there's any treasure!`;
-                        } else if (data.prerequisite_quest.length === 1) {
-                            questText = `**${data.prerequisite_quest[0]}**`;
-                        } else if (data.prerequisite_quest.length === 2) {
-                            questText = `**${data.prerequisite_quest[0]}** and **${data.prerequisite_quest[1]}**`;
-                        } else {
-                            const quests = [...data.prerequisite_quest];
-                            const last = quests.pop();
-                            questText = quests.map(q => `**${q}**`).join(', ') + `, and **${last}**`;
-                        }
-                    } else {
-                        questText = `**${data.prerequisite_quest}**`;
-                    }
+                    // Scenario 1: Quest(s) needed — split newline-separated quests into bullet list
+                    const rawQuest = data.prerequisite_quest;
+                    const questLines = Array.isArray(rawQuest)
+                        ? rawQuest
+                        : String(rawQuest).split('\n').map(q => q.trim()).filter(Boolean);
 
-                    if (!reply) {
-                        reply = `Hold on, Traveler! Before we can explore **${data.area_name}** in ${data.region}, you need to complete this quest first: ${questText}`;
+                    if (questLines.length === 0) {
+                        reply = `Ooh, no quest needed! We can go explore **${data.area_name}** in ${data.region} right away! Let's go see if there's any treasure!`;
+                    } else {
+                        const bulletList = questLines.map(q => `<span class="quest-item">• ${q}</span>`).join('\n');
+                        reply = `Hold on, Traveler! Before we can explore **${data.area_name}** in ${data.region}, you need to complete:\n${bulletList}`;
                     }
                 } else {
                     // Scenario 2: No quest needed
@@ -252,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 appendBotMessage(reply);
+
             } else if (response.status === 404) {
                 // Scenario 3: Area not found in database
                 appendBotMessage(
@@ -405,10 +397,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatText(text) {
-        let html = escapeHtml(text);
+        // Pull out any pre-built quest-item spans before escaping
+        const QUEST_PLACEHOLDER = '\x00QUEST\x00';
+        const questSpans = [];
+        let safe = text.replace(/<span class="quest-item">([^<]*)<\/span>/g, (_, content) => {
+            questSpans.push(content);
+            return QUEST_PLACEHOLDER;
+        });
+
+        // Now safely escape the rest
+        let html = escapeHtml(safe);
+
+        // Restore quest-item spans with their original content
+        html = html.replace(new RegExp(escapeHtml(QUEST_PLACEHOLDER), 'g'), () => {
+            const q = questSpans.shift();
+            return `<span class="quest-item">• ${escapeHtml(q.replace(/^• /, ''))}</span>`;
+        });
+
         // Highlighted text: **text**
         html = html.replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>');
-        // Newlines
+        // Newlines → line breaks
         html = html.replace(/\n/g, '<br>');
         return html;
     }
