@@ -25,8 +25,13 @@ RUN cp .env.example .env
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Create the SQLite database file if it doesn't exist
-RUN touch database/database.sqlite
+# Create the SQLite database file and run migrations/seeders
+RUN touch database/database.sqlite && \
+    php artisan migrate --force && \
+    php artisan db:seed --force
+
+# Ensure directories are writable
+RUN chmod -R 777 storage bootstrap/cache database
 
 # Expose the port (Render provides $PORT, defaults to 10000)
 EXPOSE 10000
