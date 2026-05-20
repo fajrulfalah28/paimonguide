@@ -37,4 +37,4 @@ RUN chmod -R 777 storage bootstrap/cache database
 EXPOSE 10000
 
 # Start the PHP server
-CMD php -S 0.0.0.0:${PORT:-10000} -t public
+CMD php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
