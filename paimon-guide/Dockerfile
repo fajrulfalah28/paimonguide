@@ -20,10 +20,13 @@ WORKDIR /app
 COPY . .
 
 # Initialize environment
-RUN cp .env.example .env && php artisan key:generate
+RUN cp .env.example .env
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
+
+# Generate application key
+RUN php artisan key:generate
 
 # Create the SQLite database file and run migrations/seeders
 RUN touch database/database.sqlite && \
