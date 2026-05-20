@@ -188,6 +188,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================
+    // Paimon Gimmick Replies (greetings, emergency food, etc.)
+    // ============================
+    function pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function getPaimonGimmickReply(text) {
+        const normalized = text.toLowerCase().replace(/[^\w\s']/g, ' ').replace(/\s+/g, ' ').trim();
+        const displayName = nickname || 'Traveler';
+
+        const isGreeting = /^(hi+|hello+|hey+|yo+|hiya+|howdy+|good\s+(morning|afternoon|evening|day|night)|sup|what'?s\s+up)\b/.test(normalized)
+            || /^(hi+|hello+|hey+)\s+(paimon|there|traveler|friend)\b/.test(normalized)
+            || /\b(hi+|hello+|hey+)\s+paimon\b/.test(normalized);
+
+        const isEmergencyFood = /\bemergency\s+food\b/.test(normalized)
+            || /\b(floating|flying)\s+(snack|food)\b/.test(normalized)
+            || /\bare\s+you\s+(an?\s+)?(emergency\s+food|snack|food)\b/.test(normalized)
+            || /\byou\s+(are|r)\s+(an?\s+)?(emergency\s+food|just\s+a\s+snack)\b/.test(normalized)
+            || /\bpaimon\s+(is|are)\s+(an?\s+)?emergency\s+food\b/.test(normalized);
+
+        if (isGreeting) {
+            return pickRandom([
+                `Ehe~ Hi ${displayName}! Paimon's right here! Got a place you wanna explore? Paimon can look up the quest for you!`,
+                `Oh! ${displayName}! Paimon was just thinking about Sticky Honey Roast... anyway, where are we going today?`,
+                `Hehe, hello ${displayName}! Paimon's the best guide in Teyvat, you know! So, which area should we check?`,
+                `Hi hi! Paimon's ready when you are! Just tell Paimon a location name and Paimon will do the rest~`,
+            ]);
+        }
+
+        if (isEmergencyFood) {
+            return pickRandom([
+                `Waaah?! Emergency food?! Paimon is NOT food, ${displayName}! Paimon is your trusted guide! ...and maybe your wallet's worst nightmare at restaurants.`,
+                `Hey! Paimon heard that! Paimon is a respectable floating companion, NOT emergency rations! Hmph!`,
+                `Ehe~ nice try, ${displayName}! But Paimon refuses to be anyone's snack! Now ask Paimon about a real location instead!`,
+                `Floating emergency food?! The nerve! Paimon works hard guiding you around Teyvat! ...unless you mean emergency food for Paimon's stomach?`,
+                `Paimon is NOT edible! Paimon is essential! Totally different! ...okay maybe Paimon gets hungry too, but that's not the point!`,
+            ]);
+        }
+
+        return null;
+    }
+
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ============================
     // Send Message Handler
     // ============================
     async function handleSend() {
@@ -203,6 +250,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Show typing indicator
         const typingEl = showTypingIndicator();
+
+        const gimmickReply = getPaimonGimmickReply(text);
+        if (gimmickReply) {
+            await delay(500 + Math.random() * 400);
+            removeTypingIndicator(typingEl);
+            appendBotMessage(gimmickReply);
+            isProcessing = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+            return;
+        }
 
         try {
             const response = await fetch('/api/check-quest', {
