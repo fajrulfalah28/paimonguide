@@ -39,5 +39,10 @@ RUN chmod -R 777 storage bootstrap/cache database
 # Expose the port (Render provides $PORT, defaults to 10000)
 EXPOSE 10000
 
-# Start the PHP server
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
+# Start the PHP server — inject Render runtime env vars into .env first
+CMD ["/bin/sh", "-c", "\
+    [ -n \"$NER_SERVICE_URL\" ] && sed -i \"s|NER_SERVICE_URL=.*|NER_SERVICE_URL=$NER_SERVICE_URL|\" .env || echo 'NER_SERVICE_URL='$NER_SERVICE_URL >> .env; \
+    [ -n \"$APP_KEY\" ] && sed -i \"s|APP_KEY=.*|APP_KEY=$APP_KEY|\" .env; \
+    [ -n \"$APP_URL\" ] && sed -i \"s|APP_URL=.*|APP_URL=$APP_URL|\" .env; \
+    php artisan config:clear; \
+    php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
