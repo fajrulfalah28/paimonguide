@@ -20,7 +20,7 @@ WORKDIR /app
 COPY . .
 
 # Initialize environment
-RUN cp .env.example .env
+RUN cp .env.example .env && php artisan key:generate
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader

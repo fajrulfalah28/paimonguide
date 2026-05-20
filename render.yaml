@@ -20,8 +20,6 @@ services:
         value: production
       - key: APP_DEBUG
         value: false
-      - key: APP_KEY
-        value: base64:aTns3BGdD4sAwfkGbg3oXvh+6vomIxCgCA37ysXLmsY=
       - key: DB_CONNECTION
         value: sqlite
       - key: NER_SERVICE_URL
