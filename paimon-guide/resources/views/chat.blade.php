@@ -30,6 +30,20 @@
 
     <div class="app-layout" id="app">
 
+        {{-- Mobile top bar (only visible on small screens) --}}
+        <div class="mobile-topbar">
+            <button class="mobile-menu-btn" id="btn-open-left" aria-label="Open info sidebar">
+                <span></span><span></span><span></span>
+            </button>
+            <span class="mobile-topbar-title">✦ Paimon Guide ✦</span>
+            <button class="mobile-menu-btn" id="btn-open-right" aria-label="Open settings sidebar">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+
+        {{-- Backdrop for drawers --}}
+        <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
         {{-- ============================================
              Left Sidebar — Branding & Info
              ============================================ --}}

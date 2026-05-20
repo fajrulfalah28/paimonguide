@@ -413,3 +413,52 @@ document.addEventListener('DOMContentLoaded', () => {
         return html;
     }
 });
+
+// ============================
+// Mobile Drawer Logic
+// ============================
+(function () {
+    const btnLeft     = document.getElementById('btn-open-left');
+    const btnRight    = document.getElementById('btn-open-right');
+    const sidebarLeft = document.querySelector('.sidebar-left');
+    const sidebarRight= document.querySelector('.sidebar-right');
+    const backdrop    = document.getElementById('drawer-backdrop');
+
+    if (!btnLeft || !backdrop) return; // desktop — nothing to do
+
+    function openDrawer(side) {
+        closeAll();
+        if (side === 'left') {
+            sidebarLeft.classList.add('drawer-open');
+            btnLeft.classList.add('open');
+        } else {
+            sidebarRight.classList.add('drawer-open');
+            btnRight.classList.add('open');
+        }
+        backdrop.classList.add('active');
+        document.body.classList.add('drawer-open');
+    }
+
+    function closeAll() {
+        sidebarLeft.classList.remove('drawer-open');
+        sidebarRight.classList.remove('drawer-open');
+        btnLeft.classList.remove('open');
+        btnRight.classList.remove('open');
+        backdrop.classList.remove('active');
+        document.body.classList.remove('drawer-open');
+    }
+
+    btnLeft.addEventListener('click', () => {
+        sidebarLeft.classList.contains('drawer-open') ? closeAll() : openDrawer('left');
+    });
+
+    btnRight.addEventListener('click', () => {
+        sidebarRight.classList.contains('drawer-open') ? closeAll() : openDrawer('right');
+    });
+
+    backdrop.addEventListener('click', closeAll);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAll();
+    });
+})();
