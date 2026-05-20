@@ -2,6 +2,7 @@ services:
   - type: web
     name: paimon-ner-service
     env: python
+    plan: free
     rootDir: ner-service
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
@@ -12,6 +13,7 @@ services:
   - type: web
     name: paimon-guide
     env: docker
+    plan: free
     rootDir: paimon-guide
     envVars:
       - key: APP_ENV
