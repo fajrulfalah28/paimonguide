@@ -38,6 +38,13 @@ body {
     overflow: hidden;
 }
 
+@media (max-width: 800px) {
+    html, body {
+        height: 100dvh;
+        overflow: hidden;
+    }
+}
+
 body {
     @apply font-sans;
     background: var(--color-sidebar-bg);
@@ -834,9 +841,9 @@ body {
     }
 
     .mobile-topbar-title {
-        font-size: 18px;
+        font-size: 17px;
         color: var(--color-brown-dark);
-        font-weight: bold;
+        font-weight: normal;
     }
 
     .mobile-menu-btn {
@@ -858,6 +865,16 @@ body {
 
     .mobile-menu-btn:hover {
         background: rgba(74, 63, 53, 0.1);
+    }
+
+    /* Info icon button overrides */
+    .mobile-info-btn {
+        font-size: 22px;
+        color: var(--color-brown-dark);
+    }
+
+    .mobile-info-btn i {
+        line-height: 1;
     }
 
     .mobile-menu-btn span {
@@ -924,12 +941,22 @@ body {
         transform: translateX(0);
     }
 
-    /* Chat panel fills screen below topbar */
+    /* Chat panel fills remaining screen below topbar */
+    .app-layout {
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+    }
+
     .chat-panel {
+        flex: 1;
         width: 100%;
-        height: calc(100vh - 56px);
-        padding: 16px 0;
-        padding-bottom: max(16px, env(safe-area-inset-bottom));
+        min-height: 0;
+        height: auto;
+        padding: 12px 0;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
     }
 
     .chat-messages {
