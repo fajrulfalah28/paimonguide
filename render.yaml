@@ -21,7 +21,7 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_KEY
-        generateValue: true
+        value: base64:aTns3BGdD4sAwfkGbg3oXvh+6vomIxCgCA37ysXLmsY=
       - key: DB_CONNECTION
         value: sqlite
       - key: NER_SERVICE_URL

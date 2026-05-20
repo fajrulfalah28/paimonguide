@@ -19,6 +19,9 @@ WORKDIR /app
 # Copy the project files
 COPY . .
 
+# Initialize environment
+RUN cp .env.example .env
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
