@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (questLines.length === 0) {
                         reply = `Ooh, no quest needed! We can go explore **${data.area_name}** in ${data.region} right away! Let's go see if there's any treasure!`;
                     } else {
-                        const bulletList = questLines.map(q => `<span class="quest-item">• ${q}</span>`).join('\n');
+                        const bulletList = questLines.map(q => `<span class="quest-item">• ${q}</span>`).join('');
                         reply = `Hold on, Traveler! Before we can explore **${data.area_name}** in ${data.region}, you need to complete:\n${bulletList}`;
                     }
                 } else {
