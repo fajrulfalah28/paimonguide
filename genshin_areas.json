@@ -1,0 +1,556 @@
+{
+  "Mondstadt": {
+    "type": "Region",
+    "areas": {
+      "Brightcrown Mountains": {
+        "type": "Area",
+        "sub_areas": ["Brightcrown Canyon", "Stormterror's Lair"]
+      },
+      "Galesong Hill": {
+        "type": "Area",
+        "sub_areas": [
+          "Cape Oath",
+          "Dadaupa Gorge",
+          "Falcon Coast",
+          "Musk Reef",
+          "Windrise"
+        ]
+      },
+      "Starfell Valley": {
+        "type": "Area",
+        "sub_areas": [
+          "Cider Lake",
+          "Mondstadt City",
+          "Starfell Lake",
+          "Starsnatch Cliff",
+          "Stormbearer Mountains",
+          "Stormbearer Point",
+          "Thousand Winds Temple",
+          "Whispering Woods"
+        ]
+      },
+      "Windwail Highland": {
+        "type": "Area",
+        "sub_areas": ["Dawn Winery", "Springvale", "Wolvendom"]
+      },
+      "Dragonspine": {
+        "type": "Area",
+        "sub_areas": [
+          "Entombed City - Ancient Palace",
+          "Entombed City - Outskirts",
+          "Skyfrost Nail",
+          "Snow-Covered Path",
+          "Starglow Cavern",
+          "Wyrmrest Valley"
+        ]
+      },
+      "Windrest Peak": {
+        "type": "Area",
+        "sub_areas": ["Dornman Port", "Millhaven", "Old Sanatorium Site"]
+      }
+    }
+  },
+  "Liyue": {
+    "type": "Region",
+    "areas": {
+      "Bishui Plain": {
+        "type": "Area",
+        "sub_areas": [
+          "Dihua Marsh",
+          "Qingce Village",
+          "Sal Terrae",
+          "Stone Gate",
+          "Wangshu Inn",
+          "Wuwang Hill"
+        ]
+      },
+      "Minlin": {
+        "type": "Area",
+        "sub_areas": [
+          "Cuijue Slope",
+          "Huaguang Stone Forest",
+          "Jueyun Karst",
+          "Mt. Aocang",
+          "Mt. Hulao",
+          "Nantianmen",
+          "Qingyun Peak",
+          "Tianqiu Valley"
+        ]
+      },
+      "Qiongji Estuary": {
+        "type": "Area",
+        "sub_areas": [
+          "Guili Plains",
+          "Luhua Pool",
+          "Mingyun Village",
+          "Yaoguang Shoal"
+        ]
+      },
+      "Lisha": {
+        "type": "Area",
+        "sub_areas": ["Dunyu Ruins", "Lingju Pass", "Qingxu Pool"]
+      },
+      "Sea of Clouds": {
+        "type": "Area",
+        "sub_areas": ["Guyun Stone Forest", "Liyue Harbor", "Mt. Tianheng"]
+      },
+      "The Chasm": {
+        "type": "Area",
+        "sub_areas": [
+          "Cinnabar Cliff",
+          "Fuao Vale",
+          "Glaze Peak",
+          "Lumberpick Valley",
+          "The Chasm's Maw",
+          "The Surface",
+          "Tiangong Gorge"
+        ]
+      },
+      "The Chasm: Underground Mines": {
+        "type": "Area",
+        "sub_areas": [
+          "Ad-Hoc Main Tunnel",
+          "Nameless Ruins",
+          "Stony Halls",
+          "The Chasm: Main Mining Area",
+          "The Glowing Narrows",
+          "The Serpent's Cave",
+          "Underground Waterway"
+        ]
+      },
+      "Chenyu Vale: Upper Vale": {
+        "type": "Area",
+        "sub_areas": [
+          "Chenlong Cleft",
+          "Jademouth",
+          "Mt. Lingmeng",
+          "Mt. Mingyuan",
+          "Qiaoying Village",
+          "Yilong Wharf"
+        ]
+      },
+      "Chenyu Vale: Southern Mountain": {
+        "type": "Area",
+        "sub_areas": [
+          "Adeptus's Repose",
+          "Chizhang Wall",
+          "Lingshu Courtyard",
+          "Mt. Xuanlian",
+          "Teatree Slope",
+          "Yaodie Valley"
+        ]
+      },
+      "Mt. Laixin": {
+        "type": "Area",
+        "sub_areas": ["Carp's Rest", "Chiwang Terrace"]
+      }
+    }
+  },
+  "Inazuma": {
+    "type": "Region",
+    "areas": {
+      "Narukami Island": {
+        "type": "Area",
+        "sub_areas": [
+          "Amakane Island",
+          "Araumi",
+          "Byakko Plain",
+          "Chinju Forest",
+          "Grand Narukami Shrine (Subarea)",
+          "Inazuma City",
+          "Jinren Island",
+          "Kamisato Estate",
+          "Konda Village",
+          "Mt. Yougou",
+          "Ritou"
+        ]
+      },
+      "Kannazuka": {
+        "type": "Area",
+        "sub_areas": ["Kujou Encampment", "Tatarasuna"]
+      },
+      "Yashiori Island": {
+        "type": "Area",
+        "sub_areas": [
+          "Fort Fujitou",
+          "Fort Mumei",
+          "Higi Village",
+          "Jakotsu Mine",
+          "Musoujin Gorge",
+          "Nazuchi Beach",
+          "Serpent's Head"
+        ]
+      },
+      "Watatsumi Island": {
+        "type": "Area",
+        "sub_areas": [
+          "Bourou Village",
+          "Mouun Shrine",
+          "Sangonomiya Shrine",
+          "Suigetsu Pool"
+        ]
+      },
+      "Seirai Island": {
+        "type": "Area",
+        "sub_areas": [
+          "\"Seiraimaru\"",
+          "Amakumo Peak",
+          "Asase Shrine",
+          "Fort Hiraumi",
+          "Koseki Village"
+        ]
+      },
+      "Tsurumi Island": {
+        "type": "Area",
+        "sub_areas": [
+          "Autake Plains",
+          "Chirai Shrine",
+          "Moshiri Ceremonial Site",
+          "Mt. Kanna",
+          "Oina Beach",
+          "Shirikoro Peak",
+          "Wakukau Shoal"
+        ]
+      },
+      "Enkanomiya": {
+        "type": "Area",
+        "sub_areas": [
+          "Dainichi Mikoshi",
+          "Evernight Temple",
+          "Kunado's Locus",
+          "The Narrows",
+          "The Serpent's Bowels",
+          "The Serpent's Heart",
+          "Yachimatahiko's Locus",
+          "Yachimatahime's Locus"
+        ]
+      }
+    }
+  },
+  "Sumeru": {
+    "type": "Region",
+    "areas": {
+      "Avidya Forest": {
+        "type": "Area",
+        "sub_areas": [
+          "Chinvat Ravine",
+          "Gandha Hill",
+          "Gandharva Ville",
+          "Sumeru City",
+          "Yazadaha Pool"
+        ]
+      },
+      "Lokapala Jungle": {
+        "type": "Area",
+        "sub_areas": [
+          "Bayda Harbor",
+          "Chatrakam Cave",
+          "Mawtiyima Forest",
+          "The Palace of Alcazarzaray"
+        ]
+      },
+      "Ardravi Valley": {
+        "type": "Area",
+        "sub_areas": ["Devantaka Mountain", "Port Ormos", "Vimara Village"]
+      },
+      "Ashavan Realm": {
+        "type": "Area",
+        "sub_areas": [
+          "Apam Woods",
+          "Caravan Ribat",
+          "Pardis Dhyai",
+          "Ruins of Dahri",
+          "Yasna Monument"
+        ]
+      },
+      "Vissudha Field": {
+        "type": "Area",
+        "sub_areas": ["Fane of Ashvattha"]
+      },
+      "Vanarana": {
+        "type": "Area",
+        "sub_areas": ["Vanarana (Subarea)"]
+      },
+      "Lost Nursery": {
+        "type": "Area",
+        "sub_areas": ["Old Vanarana"]
+      },
+      "Hypostyle Desert": {
+        "type": "Area",
+        "sub_areas": [
+          "Khemenu Temple",
+          "Sobek Oasis",
+          "The Dune of Carouses",
+          "The Dune of Elusion",
+          "The Dune of Magma",
+          "The Mausoleum of King Deshret"
+        ]
+      },
+      "Land of Lower Setekh": {
+        "type": "Area",
+        "sub_areas": ["Aaru Village", "Abdju Pit", "Dar al-Shifa", "Khaj-Nisut"]
+      },
+      "Land of Upper Setekh": {
+        "type": "Area",
+        "sub_areas": ["Valley of Dahri"]
+      },
+      "Desert of Hadramaveth": {
+        "type": "Area",
+        "sub_areas": [
+          "Debris of Panjvahe",
+          "Dunes of Steel",
+          "Mt. Damavand",
+          "Passage of Ghouls",
+          "Qusayr Al-Inkhida'",
+          "Safhe Shatranj",
+          "Tanit Camps",
+          "The Sands of Al-Azif",
+          "The Sands of Three Canals",
+          "Wadi Al-Majuj",
+          "Wounded Shin Valley"
+        ]
+      },
+      "Gavireh Lajavard": {
+        "type": "Area",
+        "sub_areas": ["Gate of Zulqarnain", "Temir Mountains", "Tunigi Hollow"]
+      },
+      "Realm of Farakhkert": {
+        "type": "Area",
+        "sub_areas": [
+          "Asipattravana Swamp",
+          "Hills of Barsom",
+          "Samudra Coast",
+          "Vourukasha Oasis"
+        ]
+      }
+    }
+  },
+  "Fontaine": {
+    "type": "Region",
+    "areas": {
+      "Court of Fontaine Region": {
+        "type": "Area",
+        "sub_areas": [
+          "Annapausis",
+          "Chemin de L'Espoir",
+          "Court of Fontaine",
+          "Fountain of Lucine",
+          "Institute of Natural Philosophy",
+          "Marcotte Station",
+          "Opera Epiclese",
+          "Salacia Plain",
+          "Thalatta Submarine Canyon"
+        ]
+      },
+      "Beryl Region": {
+        "type": "Area",
+        "sub_areas": [
+          "\"A Lonely Place\"",
+          "\"A Very Bright Place\"",
+          "\"A Very Warm Place\"",
+          "Elton Trench",
+          "Elynas",
+          "Merusea Village"
+        ]
+      },
+      "Belleau Region": {
+        "type": "Area",
+        "sub_areas": [
+          "Poisson",
+          "Romaritime Harbor",
+          "West Slopes of Mont Automnequi"
+        ]
+      },
+      "Liffey Region": {
+        "type": "Area",
+        "sub_areas": ["Fortress of Meropide", "Mont Esus East"]
+      },
+      "Fontaine Research Institute of Kinetic Energy Engineering Region": {
+        "type": "Area",
+        "sub_areas": [
+          "Central Laboratory Ruins",
+          "New Fontaine Research Institute"
+        ]
+      },
+      "Erinnyes Forest": {
+        "type": "Area",
+        "sub_areas": [
+          "Foggy Forest Path",
+          "Loch Urania",
+          "Lumidouce Harbor",
+          "Weeping Willow of the Lake"
+        ]
+      },
+      "Morte Region": {
+        "type": "Area",
+        "sub_areas": [
+          "East Slopes of Mont Automnequi",
+          "Fort Charybdis Ruins",
+          "Tower of Ipsissimus"
+        ]
+      },
+      "Nostoi Region": {
+        "type": "Area",
+        "sub_areas": ["Faded Castle", "Petrichor"]
+      },
+      "Sea of Bygone Eras": {
+        "type": "Area",
+        "sub_areas": [
+          "Alta Semita",
+          "Caesareum Palace",
+          "Capitolium",
+          "Clivus Capitolinus",
+          "Collegium Phonascorum",
+          "Hortus Euergetis",
+          "Initium Iani",
+          "Machimos",
+          "Passage of Ianus",
+          "Portus Anticus"
+        ]
+      },
+      "Mont Esus": {
+        "type": "Area",
+        "sub_areas": []
+      }
+    }
+  },
+  "Natlan": {
+    "type": "Region",
+    "areas": {
+      "Basin of Unnumbered Flames": {
+        "type": "Area",
+        "sub_areas": ["Huitztli Hill", "Stadium of the Sacred Flame"]
+      },
+      "Coatepec Mountain": {
+        "type": "Area",
+        "sub_areas": [
+          "\"Scions of the Canopy\"",
+          "Ancestral Temple",
+          "Firethief's Secret Isle",
+          "Teticpac Peak"
+        ]
+      },
+      "Tequemecan Valley": {
+        "type": "Area",
+        "sub_areas": [
+          "\"Children of Echoes\"",
+          "Sulfurous Veins",
+          "Tepeacac Rise"
+        ]
+      },
+      "Toyac Springs": {
+        "type": "Area",
+        "sub_areas": ["\"People of the Springs\"", "Ameyalco Waters"]
+      },
+      "Tezcatepetonco Range": {
+        "type": "Area",
+        "sub_areas": ["\"Masters of the Night-Wind\"", "Tecoloapan Bay"]
+      },
+      "Quahuacan Cliff": {
+        "type": "Area",
+        "sub_areas": ["\"Flower-Feather Clan\"", "Malinalco Grotto"]
+      },
+      "Ochkanatlan": {
+        "type": "Area",
+        "sub_areas": ["Legendary Tonatiuh"]
+      },
+      "Atocpan": {
+        "type": "Area",
+        "sub_areas": [
+          "\"Collective of Plenty\"",
+          "Ancient Mountain Path",
+          "Fallingstar Fields",
+          "Remnants of Tetenanco",
+          "Skyfire Circlet"
+        ]
+      },
+      "Ancient Sacred Mountain": {
+        "type": "Area",
+        "sub_areas": [
+          "Chamber of Deliberation",
+          "Esoteric Arrays",
+          "Flame-Melding Ritual Grounds",
+          "Heart of Force Inversion",
+          "Pseudostar Pedestal",
+          "Ruined Armament Workshop",
+          "Sea of Shifting Sentience",
+          "Summoning Hall"
+        ]
+      },
+      "Easybreeze Holiday Resort": {
+        "type": "Area",
+        "sub_areas": [
+          "Brewblossom Stores",
+          "Castle Joquiratto",
+          "Colorfall Cave",
+          "Colorfall Cliffs",
+          "Concealed Land of Enigmas",
+          "Easybreeze Market",
+          "Guiztli Path",
+          "Guiztli Ridge",
+          "Huha Hill",
+          "Tete Isle",
+          "Villa Guiztli",
+          "Wavey Bay"
+        ]
+      },
+      "Night Kingdom": {
+        "type": "Area",
+        "sub_areas": []
+      }
+    }
+  },
+  "Nod-Krai": {
+    "type": "Region",
+    "areas": {
+      "Lempo Isle": {
+        "type": "Area",
+        "sub_areas": [
+          "Barrowmoss Barrens",
+          "Blue Amber Lake",
+          "Clink-Clank Krumkake Craftshop",
+          "Eye of Kratti",
+          "Nasha Town",
+          "Nothing Passage",
+          "Starsand Shoal"
+        ]
+      },
+      "Hiisi Island": {
+        "type": "Area",
+        "sub_areas": [
+          "Frostmoon Enclave",
+          "Light-Bathed Platform",
+          "Silvermoon Hall"
+        ]
+      },
+      "Paha Isle": {
+        "type": "Area",
+        "sub_areas": [
+          "Final Night Cemetery",
+          "Kuuvahki Experimental Design Bureau"
+        ]
+      },
+      "Voidsea Outlook": {
+        "type": "Area",
+        "sub_areas": ["Dreadshade Mire", "Piramida"]
+      },
+      "Wavechaser Plain": {
+        "type": "Area",
+        "sub_areas": [
+          "Amsvartnir",
+          "Favonius Keep",
+          "Pillar of Embla",
+          "Wing of Keres"
+        ]
+      },
+      "Ashveil Peak": {
+        "type": "Area",
+        "sub_areas": [
+          "Cliffwatch Camp",
+          "Kipumaki Cliff",
+          "Special Territory Research Institute"
+        ]
+      }
+    }
+  }
+}

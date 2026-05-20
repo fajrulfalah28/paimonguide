@@ -1,0 +1,798 @@
+@import "tailwindcss";
+
+/* ============================================
+   Tailwind v4 Theme Configuration
+   ============================================ */
+@theme {
+    /* Define colors */
+    --color-sidebar-bg: #dbd1bf;
+    --color-chat-bg: #212332;
+    --color-brown-dark: #4a3f35;
+    --color-card-bg: #f0eae0;
+    --color-gold-muted: #a58769;
+    --color-text-dark: #4a5366;
+    --color-discord: #5865f2;
+    --color-placeholder: #9f9489;
+
+    /* Override the default Tailwind sans font with the Genshin font */
+    --font-sans: 'HYWenHei', 'Segoe UI', 'Arial', sans-serif;
+    --font-genshin: 'HYWenHei', 'Segoe UI', 'Arial', sans-serif;
+
+    /* Border Radius */
+    --radius-card: 12px;
+    --radius-pill: 10000px;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    @apply font-sans;
+    background: var(--color-sidebar-bg);
+}
+
+/* ============================================
+   Loading Screen
+   ============================================ */
+.app-loader {
+    position: fixed;
+    inset: 0;
+    background: var(--color-sidebar-bg);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.app-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.loader-logo {
+    width: 120px;
+    height: auto;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+.loader-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(165, 135, 105, 0.3);
+    border-top-color: var(--color-brown-dark);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loader-text {
+    color: var(--color-brown-dark);
+    font-size: 16px;
+    @apply font-sans;
+    font-weight: normal;
+    letter-spacing: 1px;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Main Layout — 3 Column Desktop
+   ============================================ */
+.app-layout {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+}
+
+/* ============================================
+   Left Sidebar
+   ============================================ */
+.sidebar-left {
+    width: 300px;
+    min-width: 300px;
+    background: var(--color-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.sidebar-left-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+}
+
+.sidebar-left-content {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(16px, 4vh, 48px);
+    width: 100%;
+    align-items: center;
+}
+
+/* Logo Section */
+.logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.logo-image {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 0;
+}
+
+.logo-card-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    padding: 0 24px;
+}
+
+.logo-wing {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+.logo-wing--left {
+    margin-right: -1px;
+}
+
+.logo-wing--right {
+    margin-left: -1px;
+}
+
+.logo-wing img {
+    width: 14px;
+    height: 91px;
+    display: block;
+}
+
+.logo-card {
+    background: var(--color-brown-dark);
+    border-radius: var(--radius-card);
+    padding: 16px 32px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.logo-title {
+    color: var(--color-white);
+    font-size: 40px;
+    line-height: normal;
+    @apply font-sans;
+}
+
+.logo-subtitle {
+    color: var(--color-gold-muted);
+    font-size: 12px;
+    line-height: normal;
+    @apply font-sans;
+}
+
+/* About Section */
+.about-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    padding: 0 32px;
+    width: 100%;
+}
+
+.section-title {
+    color: var(--color-brown-dark);
+    font-size: 16px;
+    @apply font-sans;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.about-card {
+    background: var(--color-card-bg);
+    border-radius: var(--radius-card);
+    padding: 12px 16px;
+    width: 100%;
+}
+
+.about-text {
+    color: var(--color-text-dark);
+    font-size: 12px;
+    line-height: 15px;
+    text-align: justify;
+    @apply font-sans;
+}
+
+.about-text strong {
+    font-weight: bold;
+}
+
+/* Links Section */
+.links-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    padding: 0 32px;
+    width: 100%;
+}
+
+.links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.link-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: var(--radius-card);
+    color: var(--color-white);
+    font-size: 16px;
+    @apply font-sans;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.link-button:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.link-button:active {
+    transform: translateY(0);
+}
+
+.link-button--github {
+    background: #303030;
+}
+
+.link-button--discord {
+    background: var(--color-discord);
+}
+
+/* Footer */
+.sidebar-footer {
+    color: var(--color-brown-dark);
+    font-size: 16px;
+    @apply font-sans;
+    text-align: center;
+}
+
+/* ============================================
+   Center Chat Panel
+   ============================================ */
+.chat-panel {
+    flex: 1;
+    min-width: 0;
+    background: var(--color-chat-bg);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 32px 0;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    min-height: 0;
+}
+
+/* Custom scrollbar for chat */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(240, 234, 224, 0.2);
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(240, 234, 224, 0.4);
+}
+
+/* Message Card (bot message — left aligned) */
+.message-card {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.message-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid #a58769;
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.message-sender {
+    color: var(--color-white);
+    font-size: 16px;
+    @apply font-sans;
+}
+
+.message-bubble {
+    display: inline-flex;
+    position: relative;
+    align-items: flex-start;
+    align-self: flex-start;
+    max-width: 100%;
+}
+
+.message-bubble-tail {
+    position: absolute;
+    top: 3px;
+    left: -5px;
+    width: 18px;
+    height: 16px;
+    z-index: 2;
+}
+
+.message-bubble-tail img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.message-bubble-text {
+    background: var(--color-card-bg);
+    color: var(--color-brown-dark);
+    font-size: 16px;
+    @apply font-sans;
+    padding: 12px 24px;
+    border-radius: 24px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    min-height: 48px;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.highlight-text {
+    color: #B9885C;
+    font-weight: normal;
+}
+
+/* Response Card (user message — right aligned) */
+.response-card {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.response-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    flex: 1;
+    min-width: 0;
+}
+
+.response-sender {
+    color: var(--color-white);
+    font-size: 16px;
+    @apply font-sans;
+}
+
+/* Response bubble with Figma SVG tail */
+.response-bubble {
+    display: inline-flex;
+    position: relative;
+    align-items: flex-start;
+    align-self: flex-end;
+    max-width: 100%;
+}
+
+.response-bubble-text {
+    background: var(--color-card-bg);
+    color: var(--color-brown-dark);
+    font-size: 16px;
+    @apply font-sans;
+    padding: 12px 24px;
+    border-radius: 24px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    min-height: 48px;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.response-bubble-tail {
+    position: absolute;
+    top: 3px;
+    right: -5px;
+    width: 18px;
+    height: 16px;
+    z-index: 2;
+}
+
+.response-bubble-tail img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Typing indicator */
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 24px;
+    background: var(--color-card-bg);
+    border-radius: 24px;
+    height: 48px;
+    position: relative;
+    z-index: 1;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-gold-muted);
+    animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+
+    40% {
+        transform: translateY(-6px);
+        opacity: 1;
+    }
+}
+
+/* Error bubble */
+.error-bubble-text {
+    background: #3d2a2a;
+    color: #f0a0a0;
+    font-size: 14px;
+    @apply font-sans;
+    padding: 12px 24px;
+    border-radius: 24px;
+    line-height: 1.5;
+    word-break: break-word;
+    min-height: 48px;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+/* Input Section */
+.chat-input-section {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 0 32px;
+    margin-top: 16px;
+}
+
+.chat-input {
+    flex: 1;
+    background: var(--color-card-bg);
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 12px 24px;
+    font-size: 16px;
+    @apply font-sans;
+    color: var(--color-brown-dark);
+    outline: none;
+    min-width: 0;
+    transition: box-shadow 0.2s ease;
+}
+
+.chat-input::placeholder {
+    color: var(--color-placeholder);
+}
+
+.chat-input:focus {
+    box-shadow: 0 0 0 2px rgba(165, 135, 105, 0.4);
+}
+
+.chat-send-btn {
+    background: var(--color-brown-dark);
+    color: var(--color-card-bg);
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 12px 24px;
+    font-size: 16px;
+    @apply font-sans;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.chat-send-btn:active {
+    transform: translateY(0);
+}
+
+.chat-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================
+   Right Settings Panel
+   ============================================ */
+.sidebar-right {
+    width: 300px;
+    min-width: 300px;
+    background: var(--color-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 0 0 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar-right-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+}
+
+.sidebar-right-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Nickname Section */
+.nickname-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 32px;
+    width: 100%;
+}
+
+.nickname-input {
+    background: var(--color-card-bg);
+    border: none;
+    border-radius: var(--radius-card);
+    padding: 6px 12px;
+    font-size: 16px;
+    @apply font-sans;
+    color: var(--color-text-dark);
+    outline: none;
+    width: 100%;
+    transition: box-shadow 0.2s ease;
+}
+
+.nickname-input:focus {
+    box-shadow: 0 0 0 2px rgba(165, 135, 105, 0.4);
+}
+
+/* Avatar Selector */
+.avatar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 32px;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.avatar-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 12px;
+}
+
+.avatar-grid::-webkit-scrollbar {
+    width: 4px;
+}
+
+.avatar-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.avatar-grid::-webkit-scrollbar-thumb {
+    background: rgba(74, 63, 53, 0.25);
+    border-radius: 2px;
+}
+
+.avatar-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(74, 63, 53, 0.45);
+}
+
+.avatar-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.avatar-container {
+    flex: 1;
+    aspect-ratio: 1;
+    background: var(--color-card-bg);
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-container:hover {
+    transform: scale(1.08);
+}
+
+.avatar-container.selected {
+    border-color: var(--color-text-dark);
+}
+
+.avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Paimon Decoration */
+.paimon-decoration {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    margin-top: auto;
+    padding-top: 32px;
+}
+
+.paimon-decoration img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ============================================
+   Message Appear Animation
+   ============================================ */
+.message-appear {
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   Responsive — collapse sidebars on smaller screens
+   ============================================ */
+@media (max-width: 1100px) {
+    .sidebar-right {
+        display: none;
+    }
+}
+
+@media (max-width: 800px) {
+    .sidebar-left {
+        display: none;
+    }
+
+    .chat-panel {
+        width: 100%;
+    }
+}

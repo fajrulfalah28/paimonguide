@@ -1,0 +1,5 @@
+sklearn-crfsuite>=0.3.6
+scikit-learn>=1.0
+nltk>=3.8
+numpy>=1.21
+matplotlib>=3.5

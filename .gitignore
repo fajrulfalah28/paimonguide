@@ -1,0 +1,37 @@
+# Laravel specific
+paimon-guide/vendor/
+paimon-guide/node_modules/
+paimon-guide/.env
+paimon-guide/public/storage
+paimon-guide/storage/*.key
+paimon-guide/.phpunit.result.cache
+paimon-guide/bootstrap/cache/*
+paimon-guide/storage/framework/cache/data/*
+paimon-guide/storage/framework/sessions/*
+paimon-guide/storage/framework/testing/*
+paimon-guide/storage/framework/views/*
+paimon-guide/storage/logs/*
+
+# Python specific
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+ner-service/venv/
+
+# Editor/OS specific
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
