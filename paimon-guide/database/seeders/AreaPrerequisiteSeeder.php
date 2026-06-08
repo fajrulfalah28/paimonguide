@@ -135,11 +135,12 @@ class AreaPrerequisiteSeeder extends Seeder
 
             foreach ($areas as $areaName => $areaData) {
                 // Insert the Area itself
+                $areaQuest = $questPrerequisites[$areaName] ?? null;
                 $rows[] = [
                     'region'               => $regionName,
                     'area_name'            => $areaName,
                     'location_type'        => 'Area',
-                    'prerequisite_quest'   => $questPrerequisites[$areaName] ?? null,
+                    'prerequisite_quest'   => $areaQuest,
                     'created_at'           => $now,
                     'updated_at'           => $now,
                 ];
@@ -147,11 +148,15 @@ class AreaPrerequisiteSeeder extends Seeder
                 // Insert each Sub-area
                 $subAreas = $areaData['sub_areas'] ?? [];
                 foreach ($subAreas as $subAreaName) {
+                    // If the sub-area has a specific quest in the array, use it.
+                    // Otherwise, inherit the quest from the parent Area.
+                    $subAreaQuest = $questPrerequisites[$subAreaName] ?? $areaQuest;
+                    
                     $rows[] = [
                         'region'             => $regionName,
                         'area_name'          => $subAreaName,
                         'location_type'      => 'Sub-area',
-                        'prerequisite_quest' => $questPrerequisites[$subAreaName] ?? null,
+                        'prerequisite_quest' => $subAreaQuest,
                         'created_at'         => $now,
                         'updated_at'         => $now,
                     ];

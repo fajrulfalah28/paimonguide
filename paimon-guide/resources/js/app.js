@@ -282,7 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = rawData.data || rawData;
 
                 let reply = '';
-                if (data.prerequisite_quest) {
+                
+                if (data.is_region) {
+                    // Scenario: User asked about a Region (e.g., Mondstadt, Nod-krai)
+                    const areaList = data.areas.map(a => `<span class="quest-item">• ${a}</span>`).join('');
+                    reply = `You want to explore **${data.region_name}**? Here are the main areas Paimon knows about in this region:\n${areaList}\nTell Paimon which one you want to visit!`;
+                } else if (data.prerequisite_quest) {
                     // Scenario 1: Quest(s) needed — split newline-separated quests into bullet list
                     const rawQuest = data.prerequisite_quest;
                     const questLines = Array.isArray(rawQuest)

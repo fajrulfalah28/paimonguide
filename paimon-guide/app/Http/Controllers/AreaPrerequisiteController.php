@@ -50,7 +50,21 @@ class AreaPrerequisiteController extends Controller
             ], 404);
         }
 
-        // 2. Query Database
+        // 2. Check if the extracted name is actually a Region FIRST
+        $regionAreas = AreaPrerequisite::whereRaw('LOWER(region) = ?', [strtolower($extractedArea)])
+            ->where('location_type', 'Area')
+            ->pluck('area_name');
+
+        if ($regionAreas->isNotEmpty()) {
+            return response()->json([
+                'found'       => true,
+                'is_region'   => true,
+                'region_name' => ucwords($extractedArea),
+                'areas'       => $regionAreas
+            ]);
+        }
+
+        // 3. Query Database for Area/Sub-area
         $query = AreaPrerequisite::query()
             ->byAreaName($extractedArea);
 
