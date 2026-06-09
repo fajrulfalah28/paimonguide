@@ -201,7 +201,7 @@ def extract_exact_gazetteer_mentions(tokens: list[str], gazetteer_names: set[str
 
 RESOLVER_STOPWORDS = {'the', 'in', 'of', 'to', 'and', 'a', 'an', 'on', 'at', 'for', 'near', 'through'}
 
-NON_LOCATION_QUERY_WORDS = {'access', 'also', 'boat', 'bro', 'can', 'cant', "can't", 'carry', 'difference', 'do', 'does', "doesn't", "don't", 'done', 'enter', 'fast', 'find', 'get', 'go', 'guide', 'hard', 'harder', 'hate', 'help', 'how', 'inside', 'is', "isn't", 'it', "it's", 'just', 'know', 'make', 'man', 'need', 'pls', 'please', 'quest', 'reach', 'route', 'someone', 'take', 'than', 'that', 'there', 'tf', 'unlock', 'want', 'way', 'what', 'where', "won't"}
+NON_LOCATION_QUERY_WORDS = {'about', 'access', 'also', 'boat', 'bro', 'can', 'cant', "can't", 'carry', 'difference', 'do', 'does', "doesn't", "don't", 'done', 'enter', 'explore', 'exploring', 'fast', 'find', 'fly', 'get', 'go', 'goes', 'going', 'guide', 'hard', 'harder', 'hate', 'help', 'how', 'inside', 'is', "isn't", 'it', "it's", 'journey', 'just', 'know', 'make', 'man', 'need', 'pls', 'please', 'quest', 'reach', 'route', 'run', 'someone', 'take', 'teleport', 'tf', 'than', 'that', 'there', 'tp', 'travel', 'traveling', 'trip', 'unlock', 'visit', 'visiting', 'walk', 'want', 'way', 'went', 'what', 'where', "won't"}
 
 GENERIC_GAZETTEER_TOKENS = {'bay', 'camp', 'camps', 'canyon', 'cave', 'city', 'cliff', 'coast', 'east', 'falls', 'forest', 'gate', 'hill', 'hills', 'inn', 'island', 'lake', 'mountain', 'mountains', 'mount', 'north', 'peak', 'plains', 'port', 'river', 'ruins', 'site', 'south', 'strait', 'valley', 'village', 'west'}
 
