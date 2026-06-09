@@ -203,7 +203,7 @@ RESOLVER_STOPWORDS = {'the', 'in', 'of', 'to', 'and', 'a', 'an', 'on', 'at', 'fo
 
 NON_LOCATION_QUERY_WORDS = {'access', 'also', 'boat', 'bro', 'can', 'cant', "can't", 'carry', 'difference', 'do', 'does', "doesn't", "don't", 'done', 'enter', 'fast', 'find', 'get', 'go', 'guide', 'hard', 'harder', 'hate', 'help', 'how', 'inside', 'is', "isn't", 'it', "it's", 'just', 'know', 'make', 'man', 'need', 'pls', 'please', 'quest', 'reach', 'route', 'someone', 'take', 'than', 'that', 'there', 'tf', 'unlock', 'want', 'way', 'what', 'where', "won't"}
 
-GENERIC_GAZETTEER_TOKENS = {'camp', 'camps', 'cave', 'city', 'east', 'gate', 'inn', 'island', 'north', 'port', 'ruins', 'site', 'south', 'village', 'west'}
+GENERIC_GAZETTEER_TOKENS = {'bay', 'camp', 'camps', 'canyon', 'cave', 'city', 'cliff', 'coast', 'east', 'falls', 'forest', 'gate', 'hill', 'hills', 'inn', 'island', 'lake', 'mountain', 'mountains', 'mount', 'north', 'peak', 'plains', 'port', 'river', 'ruins', 'site', 'south', 'strait', 'valley', 'village', 'west'}
 
 OVERLAP_MIN_SCORE = 0.5
 
@@ -339,15 +339,21 @@ def find_best_token_correction(token: str, vocabulary: set[str], allowed_tokens:
         return None
     best_match = None
     best_distance = None
+    best_prefix = -1
     for candidate in vocabulary:
         if abs(len(candidate) - len(normalized_token)) > get_max_edit_distance(normalized_token):
             continue
         distance = edit_distance(normalized_token, candidate)
         if distance > get_max_edit_distance(normalized_token):
             continue
-        if best_match is None or distance < best_distance or (distance == best_distance and len(candidate) < len(best_match)):
+        prefix = get_common_prefix_length(normalized_token, candidate)
+        if (best_match is None
+                or distance < best_distance
+                or (distance == best_distance and prefix > best_prefix)
+                or (distance == best_distance and prefix == best_prefix and len(candidate) < len(best_match))):
             best_match = candidate
             best_distance = distance
+            best_prefix = prefix
     if best_match is None or best_match == normalized_token:
         return None
     return {'original': normalized_token, 'corrected': best_match, 'distance': best_distance, 'reason': f"Corrected token '{normalized_token}' to '{best_match}' with edit distance {best_distance}."}
@@ -382,13 +388,23 @@ def generate_alias_ngrams(tokens: list[str], max_n: int=4) -> list[str]:
     return alias_ngrams
 
 def detect_alias_matches(tokens: list[str], gazetteer_names: set[str]) -> list[dict[str, object]]:
-    alias_entities = []
+    all_candidates: list[str] = []
     for alias_candidate in generate_alias_ngrams(tokens):
         if alias_candidate not in ALIAS_MAP:
             continue
         alias_resolved_name = normalize_name(ALIAS_MAP[alias_candidate])
         if alias_candidate in gazetteer_names and alias_resolved_name != alias_candidate:
             continue
+        all_candidates.append(alias_candidate)
+
+    filtered_candidates = [
+        c for c in all_candidates
+        if not any(longer != c and longer.startswith(c + ' ') for longer in all_candidates)
+    ]
+
+    alias_entities = []
+    for alias_candidate in filtered_candidates:
+        alias_resolved_name = normalize_name(ALIAS_MAP[alias_candidate])
         alias_entity = build_alias_entity(alias_candidate, alias_resolved_name)
         overlap_candidates = rank_overlap_candidates(alias_candidate, gazetteer_names)
         if len(tokenise_for_overlap(alias_candidate)) == 1 and len(overlap_candidates) > 1 and (abs(overlap_candidates[0]['score'] - overlap_candidates[1]['score']) <= AMBIGUITY_MARGIN):
@@ -414,6 +430,21 @@ def collect_fallback_token_spans(tokens: list[str], predicted_tags: list[str], f
             alias_candidate = ' '.join(alias_parts)
             if alias_candidate in ALIAS_MAP and alias_candidate not in fallback_spans:
                 fallback_spans.append(alias_candidate)
+    for start in range(len(tokens)):
+        if predicted_tags[start] != 'O':
+            continue
+        span_parts: list[str] = []
+        for end_idx in range(start, min(len(tokens), start + 5)):
+            if predicted_tags[end_idx] != 'O':
+                break
+            tok = normalize_name(tokens[end_idx])
+            if not tok:
+                break
+            span_parts.append(tok)
+            if len(span_parts) >= 2:
+                combined = ' '.join(span_parts)
+                if combined not in fallback_spans:
+                    fallback_spans.append(combined)
     for (token, tag, feature_row) in zip(tokens, predicted_tags, features):
         normalized_token = normalize_token(token)
         if tag != 'O':
@@ -423,6 +454,8 @@ def collect_fallback_token_spans(tokens: list[str], predicted_tags: list[str], f
                 fallback_spans.append(normalized_token)
             continue
         if len(normalized_token) < MIN_FUZZY_TOKEN_LENGTH or normalized_token in RESOLVER_STOPWORDS:
+            continue
+        if normalized_token in GENERIC_GAZETTEER_TOKENS:
             continue
         if not is_location_like_token(token, feature_row.get('postag', ''), gazetteer_tokens):
             continue
@@ -450,7 +483,11 @@ def resolve_span_to_canonical(raw_span: str, gazetteer_names: set[str], gazettee
         top_candidate = overlap_candidates[0]
         confidence = top_candidate['score']
         ambiguous = len(overlap_candidates) > 1 and abs(top_candidate['score'] - overlap_candidates[1]['score']) <= AMBIGUITY_MARGIN
-        if confidence >= OVERLAP_MIN_SCORE:
+        span_tokens = tokenise_for_overlap(normalized_span)
+        is_single_generic = len(span_tokens) == 1 and span_tokens[0] in GENERIC_GAZETTEER_TOKENS
+        non_generic_overlap = [t for t in top_candidate['overlap_tokens'] if t not in GENERIC_GAZETTEER_TOKENS]
+        has_meaningful_overlap = bool(non_generic_overlap) or len(span_tokens) == 1
+        if confidence >= OVERLAP_MIN_SCORE and not is_single_generic and has_meaningful_overlap:
             return build_overlap_entity(normalized_span, overlap_candidates, 'overlap', confidence, ambiguous, [])
     (corrected_span, fuzzy_corrections) = apply_fuzzy_token_corrections(normalized_span, gazetteer_tokens, allowed_tokens=allowed_fuzzy_tokens)
     if corrected_span and corrected_span != normalized_span and fuzzy_corrections:
@@ -561,12 +598,22 @@ def resolve_query_locations(raw_text: str, model, gazetteer_names: set[str], gaz
     entities = [build_exact_entity(match_name) for match_name in exact_matches]
     entities.extend(alias_entities)
     processed_spans = set(exact_matches + alias_matches)
-    for span in crf_spans + fallback_token_spans:
+    for alias_span in alias_matches:
+        for tok in normalize_name(alias_span).split():
+            processed_spans.add(tok)
+    all_spans = crf_spans + fallback_token_spans
+    all_spans_sorted = sorted(all_spans, key=lambda s: len(tokenise_for_overlap(normalize_name(s))), reverse=True)
+    for span in all_spans_sorted:
         normalized_span = normalize_name(span)
         if not normalized_span or normalized_span in processed_spans:
             continue
+        span_toks = tokenise_for_overlap(normalized_span)
+        if len(span_toks) == 1 and span_toks[0] in GENERIC_GAZETTEER_TOKENS:
+            continue
         entities.append(resolve_span_to_canonical(normalized_span, gazetteer_names, gazetteer_tokens, allowed_fuzzy_tokens=allowed_fuzzy_tokens))
         processed_spans.add(normalized_span)
+        for tok in span_toks:
+            processed_spans.add(tok)
     merged_entities = merge_resolved_entities(entities)
     resolved_names = [entity['resolved_name'] for entity in merged_entities if should_include_resolved_name(entity, merged_entities)]
     return {'query': raw_text, 'tokens': tokens, 'crf_tags': crf_tags, 'crf_spans': crf_spans, 'exact_matches': exact_matches, 'alias_matches': alias_matches, 'fallback_token_spans': fallback_token_spans, 'entities': merged_entities, 'resolved_names': resolved_names}
