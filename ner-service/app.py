@@ -203,7 +203,7 @@ RESOLVER_STOPWORDS = {'the', 'in', 'of', 'to', 'and', 'a', 'an', 'on', 'at', 'fo
 
 NON_LOCATION_QUERY_WORDS = {'about', 'access', 'also', 'boat', 'bro', 'can', 'cant', "can't", 'carry', 'difference', 'do', 'does', "doesn't", "don't", 'done', 'enter', 'explore', 'exploring', 'fast', 'find', 'fly', 'get', 'go', 'goes', 'going', 'guide', 'hard', 'harder', 'hate', 'help', 'how', 'inside', 'is', "isn't", 'it', "it's", 'journey', 'just', 'know', 'make', 'man', 'need', 'pls', 'please', 'quest', 'reach', 'route', 'run', 'someone', 'take', 'teleport', 'tf', 'than', 'that', 'there', 'tp', 'travel', 'traveling', 'trip', 'unlock', 'visit', 'visiting', 'walk', 'want', 'way', 'went', 'what', 'where', "won't"}
 
-GENERIC_GAZETTEER_TOKENS = {'bay', 'camp', 'camps', 'canyon', 'cave', 'city', 'cliff', 'coast', 'east', 'falls', 'forest', 'gate', 'hill', 'hills', 'inn', 'island', 'lake', 'mountain', 'mountains', 'mount', 'north', 'peak', 'plains', 'port', 'river', 'ruins', 'site', 'south', 'strait', 'valley', 'village', 'west'}
+GENERIC_GAZETTEER_TOKENS = {'bay', 'camp', 'camps', 'canyon', 'cave', 'city', 'cliff', 'coast', 'east', 'falls', 'forest', 'gate', 'hill', 'hills', 'inn', 'island', 'lake', 'mountain', 'mountains', 'mount', 'north', 'peak', 'plain', 'plains', 'port', 'river', 'ruins', 'site', 'south', 'strait', 'valley', 'village', 'west', 'sea', 'shrine', 'shrines', 'harbor', 'mine', 'mines', 'gorge', 'domain', 'realm', 'desert', 'institute', 'prison', 'fortress'}
 
 OVERLAP_MIN_SCORE = 0.5
 
@@ -610,10 +610,12 @@ def resolve_query_locations(raw_text: str, model, gazetteer_names: set[str], gaz
         span_toks = tokenise_for_overlap(normalized_span)
         if len(span_toks) == 1 and span_toks[0] in GENERIC_GAZETTEER_TOKENS:
             continue
-        entities.append(resolve_span_to_canonical(normalized_span, gazetteer_names, gazetteer_tokens, allowed_fuzzy_tokens=allowed_fuzzy_tokens))
-        processed_spans.add(normalized_span)
-        for tok in span_toks:
-            processed_spans.add(tok)
+        entity = resolve_span_to_canonical(normalized_span, gazetteer_names, gazetteer_tokens, allowed_fuzzy_tokens=allowed_fuzzy_tokens)
+        entities.append(entity)
+        if entity['method'] != 'raw' or entity['confidence'] >= RAW_RESOLVED_NAME_FLOOR:
+            processed_spans.add(normalized_span)
+            for tok in span_toks:
+                processed_spans.add(tok)
     merged_entities = merge_resolved_entities(entities)
     resolved_names = [entity['resolved_name'] for entity in merged_entities if should_include_resolved_name(entity, merged_entities)]
     return {'query': raw_text, 'tokens': tokens, 'crf_tags': crf_tags, 'crf_spans': crf_spans, 'exact_matches': exact_matches, 'alias_matches': alias_matches, 'fallback_token_spans': fallback_token_spans, 'entities': merged_entities, 'resolved_names': resolved_names}
