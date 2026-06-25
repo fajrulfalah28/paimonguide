@@ -1,18 +1,3 @@
-/**
- * Paimon Guide — Chat Logic (Vanilla JS)
- *
- * Handles:
- * - Sending messages to /api/check-quest (Knowledge Base lookup)
- * - Displaying bot and user messages in the chat
- * - Typing indicator / loading state
- * - Error handling
- * - Nickname + avatar persistence via localStorage
- * - Retroactive nickname & avatar updates in chat history
- */
-
-// ============================
-// Avatar List (profile_selector folder — 4-column grid)
-// ============================
 const AVATARS = [
     '/images/profile_selector/Paimon.webp',
     '/images/profile_selector/013a6b4d7197e0ce2407a862a450b44b.webp',
@@ -56,54 +41,34 @@ const AVATARS = [
     '/images/profile_selector/b8c7c4d36b5a2cf9c7cf4bf16787b349.webp',
 ];
 
-// ============================
-// Global Loader Logic
-// ============================
 window.addEventListener('load', () => {
     const loader = document.getElementById('app-loader');
     if (loader) {
-        // Slight delay to ensure the UI is fully painted and the loader animation is visible briefly
         setTimeout(() => {
             loader.classList.add('hidden');
             setTimeout(() => {
                 if (loader.parentNode) loader.parentNode.removeChild(loader);
-            }, 500); // Matches CSS transition duration
+            }, 500);
         }, 400);
     }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ============================
-    // DOM Elements
-    // ============================
     const chatMessages = document.getElementById('chat-messages');
-    const chatInput    = document.getElementById('chat-input');
-    const sendBtn      = document.getElementById('send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
     const nicknameInput = document.getElementById('nickname-input');
-    const avatarGrid   = document.getElementById('avatar-grid');
+    const avatarGrid = document.getElementById('avatar-grid');
 
-    // ============================
-    // State
-    // ============================
-    let nickname       = localStorage.getItem('paimon_nickname') || 'Traveler';
+    let nickname = localStorage.getItem('paimon_nickname') || 'Traveler';
     let selectedAvatar = parseInt(localStorage.getItem('paimon_avatar') || '0', 10);
-    let isProcessing   = false;
+    let isProcessing = false;
 
-    // ============================
-    // Build Avatar Grid dynamically
-    // ============================
     buildAvatarGrid();
 
-    // ============================
-    // Initialization
-    // ============================
     nicknameInput.value = nickname;
     highlightAvatar(selectedAvatar);
     showGreeting();
-
-    // ============================
-    // Event Listeners
-    // ============================
     sendBtn.addEventListener('click', handleSend);
 
     chatInput.addEventListener('keydown', (e) => {
@@ -116,13 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
     nicknameInput.addEventListener('input', (e) => {
         nickname = e.target.value.trim() || 'Traveler';
         localStorage.setItem('paimon_nickname', nickname);
-        // Retroactively update all existing user-message sender labels
         updateAllSenderLabels(nickname);
     });
 
-    // ============================
-    // Build Avatar Grid
-    // ============================
     function buildAvatarGrid() {
         if (!avatarGrid) return;
         avatarGrid.innerHTML = '';
@@ -152,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedAvatar = idx;
                     localStorage.setItem('paimon_avatar', idx.toString());
                     highlightAvatar(idx);
-                    // Update the avatar in all existing user messages too
                     updateAllUserAvatars(AVATARS[idx]);
                 });
 
@@ -163,16 +123,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ============================
-    // Greeting
-    // ============================
     function showGreeting() {
         const variations = [
             "Just tell Paimon where you want to go, and Paimon will look up the quest requirements! Maybe we'll find some Sticky Honey Roast along the way~",
             "Type the name of any place you wanna explore, and Paimon will check if we need to do any quests first! Oh, Paimon hopes there's treasure...",
             "Let Paimon know where we're heading next! Paimon will make sure we meet all the requirements. Ooh, all this guiding is making Paimon hungry!"
         ];
-        
+
         const randomGreeting = variations[Math.floor(Math.random() * variations.length)];
 
         const greetings = [
@@ -187,9 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ============================
-    // Paimon Gimmick Replies (greetings, emergency food, etc.)
-    // ============================
     function pickRandom(arr) {
         return arr[Math.floor(Math.random() * arr.length)];
     }
@@ -234,9 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    // ============================
-    // Send Message Handler
-    // ============================
     async function handleSend() {
         const text = chatInput.value.trim();
         if (!text || isProcessing) return;
@@ -244,11 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isProcessing = true;
         sendBtn.disabled = true;
 
-        // Show user message
         appendUserMessage(text);
         chatInput.value = '';
 
-        // Show typing indicator
         const typingEl = showTypingIndicator();
 
         const gimmickReply = getPaimonGimmickReply(text);
@@ -272,23 +221,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ area_name: text }),
             });
 
-            // Remove typing indicator
             removeTypingIndicator(typingEl);
 
             const rawData = await response.json();
 
             if (response.ok) {
-                // Laravel JsonResource wraps in { data: { ... } }
                 const data = rawData.data || rawData;
 
                 let reply = '';
-                
+
                 if (data.is_region) {
-                    // Scenario: User asked about a Region (e.g., Mondstadt, Nod-krai)
                     const areaList = data.areas.map(a => `<span class="quest-item">• ${a}</span>`).join('');
                     reply = `You want to explore **${data.region_name}**? Here are the main areas Paimon knows about in this region:\n${areaList}\nTell Paimon which one you want to visit!`;
                 } else if (data.prerequisite_quest) {
-                    // Scenario 1: Quest(s) needed — split newline-separated quests into bullet list
                     const rawQuest = data.prerequisite_quest;
                     const questLines = Array.isArray(rawQuest)
                         ? rawQuest
@@ -301,17 +246,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         reply = `Hold on, Traveler! Before we can explore **${data.area_name}** in ${data.region}, you need to complete:\n${bulletList}`;
                     }
                 } else {
-                    // Scenario 2: No quest needed
                     reply = `Ooh, no quest needed! We can go explore **${data.area_name}** in ${data.region} right away! Let's go see if there's any treasure!`;
                 }
 
                 appendBotMessage(reply);
 
             } else if (response.status === 404) {
-                // Scenario 3: Area not found in database
-                appendBotMessage(
-                    `Hmm... Paimon's never heard of "${text}"...\n\nAre you sure you spelled it right, Traveler? Try something like "Enkanomiya", "Dragonspine", or "The Chasm"!`
-                );
+                const errorMessage = rawData.message || `Hmm... Paimon couldn't find a location in "${text}"...`;
+                appendBotMessage(errorMessage);
             } else if (response.status === 422) {
                 const errors = rawData.errors || {};
                 const errorMsg = Object.values(errors).flat().join('\n');
@@ -329,9 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ============================
-    // Chat Message Rendering
-    // ============================
     function appendBotMessage(text, isError = false) {
         const card = document.createElement('div');
         card.className = 'message-card message-appear';
@@ -361,8 +300,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = 'response-card message-appear';
 
-        const displayName  = nickname || 'Traveler';
-        const avatarSrc    = AVATARS[selectedAvatar] || AVATARS[0];
+        const displayName = nickname || 'Traveler';
+        const avatarSrc = AVATARS[selectedAvatar] || AVATARS[0];
 
         card.innerHTML = `
             <div class="response-content">
@@ -381,27 +320,17 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
     }
 
-    // ============================
-    // Retroactive Updates
-    // ============================
-
-    /** Update the sender label on every user bubble already in the chat. */
     function updateAllSenderLabels(newName) {
         document.querySelectorAll('[data-user-sender="true"]').forEach(el => {
             el.textContent = newName;
         });
     }
 
-    /** Update the avatar <img> in every user bubble already in the chat. */
     function updateAllUserAvatars(newSrc) {
         document.querySelectorAll('.user-avatar-img').forEach(img => {
             img.src = newSrc;
         });
     }
-
-    // ============================
-    // Typing Indicator
-    // ============================
     function showTypingIndicator() {
         const card = document.createElement('div');
         card.className = 'message-card message-appear';
@@ -435,18 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ============================
-    // Avatar Selection
-    // ============================
     function highlightAvatar(index) {
         document.querySelectorAll('.avatar-container').forEach((c, i) => {
             c.classList.toggle('selected', i === index);
         });
     }
 
-    // ============================
-    // Utilities
-    // ============================
     function scrollToBottom() {
         requestAnimationFrame(() => {
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -460,7 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatText(text) {
-        // Pull out any pre-built quest-item spans before escaping
         const QUEST_PLACEHOLDER = '\x00QUEST\x00';
         const questSpans = [];
         let safe = text.replace(/<span class="quest-item">([^<]*)<\/span>/g, (_, content) => {
@@ -468,34 +390,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return QUEST_PLACEHOLDER;
         });
 
-        // Now safely escape the rest
         let html = escapeHtml(safe);
 
-        // Restore quest-item spans with their original content
         html = html.replace(new RegExp(escapeHtml(QUEST_PLACEHOLDER), 'g'), () => {
             const q = questSpans.shift();
             return `<span class="quest-item">• ${escapeHtml(q.replace(/^• /, ''))}</span>`;
         });
 
-        // Highlighted text: **text**
         html = html.replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>');
-        // Newlines → line breaks
         html = html.replace(/\n/g, '<br>');
         return html;
     }
 });
 
-// ============================
-// Mobile Drawer Logic
-// ============================
 (function () {
-    const btnLeft     = document.getElementById('btn-open-left');
-    const btnRight    = document.getElementById('btn-open-right');
+    const btnLeft = document.getElementById('btn-open-left');
+    const btnRight = document.getElementById('btn-open-right');
     const sidebarLeft = document.querySelector('.sidebar-left');
-    const sidebarRight= document.querySelector('.sidebar-right');
-    const backdrop    = document.getElementById('drawer-backdrop');
+    const sidebarRight = document.querySelector('.sidebar-right');
+    const backdrop = document.getElementById('drawer-backdrop');
 
-    if (!btnLeft || !backdrop) return; // desktop — nothing to do
+    if (!btnLeft || !backdrop) return;
 
     function openDrawer(side) {
         closeAll();

@@ -7,10 +7,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class AreaPrerequisiteResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     * Consistent JSON shape for the Knowledge Base lookup response.
-     */
     public function toArray(Request $request): array
     {
         $questVal = $this->prerequisite_quest;
