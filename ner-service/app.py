@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify
 import json
 import pickle
 import re
-import random
 import nltk
 from pathlib import Path
 import os
+import numpy as np
+from scipy.optimize import minimize
 
 app = Flask(__name__)
 
@@ -18,20 +19,97 @@ except LookupError:
     except Exception:
         nltk.download('averaged_perceptron_tagger', quiet=True)
 
-LABELS = ['O', 'B-LOC', 'I-LOC']
-
-LOCATION_CONNECTORS = {'of', 'de', 'al', 'al-', 'the'}
-
-ALIAS_MAP = {'mondo': 'mondstadt', 'mond': 'mondstadt', 'mondstat': 'mondstadt', 'dragon spine': 'dragonspine', 'stormterror': "stormterror's lair", 'dvalin lair': "stormterror's lair", "dvalin's lair": "stormterror's lair", 'chasm': 'the chasm', 'chasm underground': 'the chasm: underground mines', 'underground mines': 'the chasm: underground mines', 'chasm maw': "the chasm's maw", 'liyue city': 'liyue harbor', 'chenyu': 'chenyu vale: upper vale', 'enka': 'enkanomiya', 'watatsumi': 'watatsumi island', 'narukami': 'narukami island', 'seirai': 'seirai island', 'yashiori': 'yashiori island', 'tsurumi': 'tsurumi island', 'narukami shrine': 'grand narukami shrine (subarea)', 'grand narukami shrine': 'grand narukami shrine (subarea)', 'sumeru desert': 'hypostyle desert', 'hadramaveth': 'desert of hadramaveth', 'king deshret': 'the mausoleum of king deshret', 'mausoleum': 'the mausoleum of king deshret', 'pyramid': 'the mausoleum of king deshret', 'farakhkert': 'realm of farakhkert', 'oasis': 'vourukasha oasis', 'vanarana': 'vanarana (subarea)', 'old vanarana': 'lost nursery', 'fri': 'fontaine research institute of kinetic energy engineering region', 'research institute': 'fontaine research institute of kinetic energy engineering region', 'kinetic institute': 'fontaine research institute of kinetic energy engineering region', 'meropide': 'fortress of meropide', 'prison': 'fortress of meropide', 'remuria': 'sea of bygone eras', 'bygone eras': 'sea of bygone eras', 'court of fontaine': 'court of fontaine region', 'stadium': 'stadium of the sacred flame', 'scions': '"scions of the canopy"', 'canopy': '"scions of the canopy"', 'echoes': '"children of echoes"', 'springs': '"people of the springs"', 'night wind': '"masters of the night-wind"', 'flower feather': '"flower-feather clan"', 'collective': '"collective of plenty"', 'night kingdom': 'night kingdom', 'nod krai': 'nod-krai', 'nodkrai': 'nod-krai', 'kuuvahki': 'kuuvahki experimental design bureau', 'design bureau': 'kuuvahki experimental design bureau', 'research institute nod krai': 'special territory research institute', 'special territory': 'special territory research institute'}
-
-_ABBREV_RE = re.compile('^[A-Z][a-z]{0,3}\\.$')
+LABELS = ["O", "B-LOC", "I-LOC"]
+LOCATION_CONNECTORS = {"of", "de", "al", "al-", "the"}
+ALIAS_MAP = {
+    # === MONDSTADT ===
+    "mondo": "mondstadt",
+    "mond": "mondstadt",
+    "mondstat": "mondstadt", # Typo yang sangat sering terjadi
+    "dragon spine": "dragonspine",
+    "stormterror": "stormterror's lair",
+    "dvalin lair": "stormterror's lair",
+    "dvalin's lair": "stormterror's lair",
+    
+    # === LIYUE ===
+    "chasm": "the chasm",
+    "chasm underground": "the chasm: underground mines",
+    "underground mines": "the chasm: underground mines",
+    "chasm maw": "the chasm's maw",
+    "liyue city": "liyue harbor",
+    "chenyu": "chenyu vale: upper vale", # Biasanya player menyebut chenyu merujuk ke area utamanya
+    
+    # === INAZUMA ===
+    "enka": "enkanomiya",
+    "watatsumi": "watatsumi island",
+    "narukami": "narukami island",
+    "seirai": "seirai island",
+    "yashiori": "yashiori island",
+    "tsurumi": "tsurumi island",
+    "narukami shrine": "grand narukami shrine (subarea)",
+    "grand narukami shrine": "grand narukami shrine (subarea)",
+    
+    # === SUMERU ===
+    "sumeru desert": "hypostyle desert",
+    "hadramaveth": "desert of hadramaveth",
+    "king deshret": "the mausoleum of king deshret",
+    "mausoleum": "the mausoleum of king deshret",
+    "pyramid": "the mausoleum of king deshret", # Sering disebut pyramid di komunitas
+    "farakhkert": "realm of farakhkert",
+    "oasis": "vourukasha oasis",
+    "vanarana": "vanarana (subarea)",
+    "old vanarana": "lost nursery",
+    
+    # === FONTAINE ===
+    "fri": "fontaine research institute of kinetic energy engineering region",
+    "research institute": "fontaine research institute of kinetic energy engineering region",
+    "kinetic institute": "fontaine research institute of kinetic energy engineering region",
+    "meropide": "fortress of meropide",
+    "prison": "fortress of meropide", # Sering disebut prison/penjara
+    "remuria": "sea of bygone eras", # Remuria adalah nama lore dari map ini
+    "bygone eras": "sea of bygone eras",
+    "court of fontaine": "court of fontaine region",
+    
+    # === NATLAN ===
+    "stadium": "stadium of the sacred flame",
+    "scions": "\"scions of the canopy\"",
+    "canopy": "\"scions of the canopy\"",
+    "echoes": "\"children of echoes\"",
+    "springs": "\"people of the springs\"",
+    "night wind": "\"masters of the night-wind\"",
+    "flower feather": "\"flower-feather clan\"",
+    "collective": "\"collective of plenty\"",
+    "night kingdom": "night kingdom",
+    
+    # === NOD-KRAI ===
+    "nod krai": "nod-krai",
+    "nodkrai": "nod-krai",
+    "kuuvahki": "kuuvahki experimental design bureau",
+    "design bureau": "kuuvahki experimental design bureau",
+    "research institute nod krai": "special territory research institute",
+    "special territory": "special territory research institute"
+}
+_ABBREV_RE = re.compile(r"^[A-Z][a-z]{0,3}\.$")
 
 def normalize_name(name: str) -> str:
     name = name.lower().strip()
     if name.startswith('"') and name.endswith('"'):
         name = name[1:-1]
     name = re.sub(r"\s*\([^)]*\)\s*$", "", name)
+    name = name.strip("[]")
+    name = re.sub(r'\b(mt|st|dr|ft)\.', r'\1', name)
+    name = name.strip(".:,;!?")
     return name.strip()
+
+def load_gazetteer(json_path: str) -> tuple[set[str], set[str]]:
+    with open(json_path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    names = flatten_gazetteer(data)
+    for expansion in ALIAS_MAP.values():
+        names.add(normalize_name(expansion))
+
+    return names, build_token_set(names)
 
 def flatten_gazetteer(data: dict) -> set[str]:
     names: set[str] = set()
@@ -58,15 +136,14 @@ def build_token_set(names: set[str]) -> set[str]:
                 tokens.add(cleaned)
     return tokens
 
-def load_gazetteer(json_path: str) -> tuple[set[str], set[str]]:
-    with open(json_path, "r", encoding="utf-8") as handle:
-        data = json.load(handle)
-
-    names = flatten_gazetteer(data)
-    for expansion in ALIAS_MAP.values():
-        names.add(normalize_name(expansion))
-
-    return names, build_token_set(names)
+def ensure_pos_tagger() -> None:
+    try:
+        nltk.data.find("taggers/averaged_perceptron_tagger_eng")
+    except LookupError:
+        try:
+            nltk.download("averaged_perceptron_tagger_eng", quiet=True)
+        except Exception:
+            nltk.download("averaged_perceptron_tagger", quiet=True)
 
 def tokenize_locations(text: str) -> list[str]:
     for old, new in (("\u201c", '"'), ("\u201d", '"'), ("\u2018", "'"), ("\u2019", "'")):
@@ -100,18 +177,10 @@ def tokenize_locations(text: str) -> list[str]:
 
     return merged_tokens
 
-def ensure_pos_tagger() -> None:
-    try:
-        nltk.data.find("taggers/averaged_perceptron_tagger_eng")
-    except LookupError:
-        try:
-            nltk.download("averaged_perceptron_tagger_eng", quiet=True)
-        except Exception:
-            nltk.download("averaged_perceptron_tagger", quiet=True)
-
 def get_pos_tags(tokens: list[str]) -> list[str]:
     ensure_pos_tagger()
     return [tag for _, tag in nltk.pos_tag(tokens)]
+
 
 def normalize_token(token: str) -> str:
     return normalize_name(token).strip(':.,;!?"')
@@ -163,20 +232,28 @@ def word2features(
 
     features = {
         "bias": 1.0,
-        "word.isdigit()": word.isdigit(),
         "word.prefix2": normalized[:2],
         "word.prefix3": normalized[:3],
         "word.suffix2": normalized[-2:],
         "word.suffix3": normalized[-3:],
         "postag": postag,
         "postag[:2]": postag[:2],
-        "is_sentence_start": index == 0,
-        "is_sentence_end": index == len(sentence) - 1,
-        "is_location_connector": normalized in LOCATION_CONNECTORS,
-        "is_in_genshin_map": is_fuzzy or in_full_name,
-        "gazetteer_word_overlap": is_fuzzy,
-        "gazetteer_phrase_overlap": in_sentence_gazetteer or is_fuzzy,
     }
+
+    if word.isdigit():
+        features["word.isdigit()"] = True
+    if index == 0:
+        features["is_sentence_start"] = True
+    if index == len(sentence) - 1:
+        features["is_sentence_end"] = True
+    if normalized in LOCATION_CONNECTORS:
+        features["is_location_connector"] = True
+    if is_fuzzy or in_full_name:
+        features["is_in_genshin_map"] = True
+    if is_fuzzy:
+        features["gazetteer_word_overlap"] = True
+    if is_fuzzy or in_sentence_gazetteer:
+        features["gazetteer_phrase_overlap"] = True
 
     if len(normalized) >= 4:
         for i in range(len(normalized) - 2):
@@ -189,9 +266,11 @@ def word2features(
         features.update({
             "-1:postag": pos_tags[index - 1],
             "-1:postag[:2]": pos_tags[index - 1][:2],
-            "-1:is_connector": prev_norm in LOCATION_CONNECTORS,
-            "-1:gazetteer_word_overlap": prev_norm in gazetteer_tokens or is_fuzzy_gazetteer_token(prev_norm, gazetteer_tokens)
         })
+        if prev_norm in LOCATION_CONNECTORS:
+            features["-1:is_connector"] = True
+        if prev_norm in gazetteer_tokens:
+            features["-1:gazetteer_word_overlap"] = True
     else:
         features["BOS"] = True
 
@@ -201,9 +280,11 @@ def word2features(
         features.update({
             "+1:postag": pos_tags[index + 1],
             "+1:postag[:2]": pos_tags[index + 1][:2],
-            "+1:is_connector": next_norm in LOCATION_CONNECTORS,
-            "+1:gazetteer_word_overlap": next_norm in gazetteer_tokens or is_fuzzy_gazetteer_token(next_norm, gazetteer_tokens)
         })
+        if next_norm in LOCATION_CONNECTORS:
+            features["+1:is_connector"] = True
+        if next_norm in gazetteer_tokens:
+            features["+1:gazetteer_word_overlap"] = True
     else:
         features["EOS"] = True
 
@@ -216,6 +297,319 @@ def sent2features(sentence: list[str], gazetteer_names: set[str], gazetteer_toke
         word2features(sentence, pos_tags, idx, gazetteer_names, gazetteer_tokens, sentence_lookup)
         for idx in range(len(sentence))
     ]
+
+class LinearChainCRF:
+    # l2_reg jadi sigma (bobot) untuk L2 Regularization
+    def __init__(self, l2_reg=0.1, max_iter=200):
+        self.l2_reg = l2_reg
+        self.max_iter = max_iter
+        self.feature_to_idx = {}
+        self.label_to_idx = {}
+        self.idx_to_label = {}
+        self.weights = None
+        self.num_labels = 0
+        self.num_features = 0
+
+    def _flatten_features(self, features_dict):
+        flat = {}
+        for k, v in features_dict.items():
+            # Kalo string
+            if isinstance(v, str):
+                flat[f"{k}={v}"] = 1.0
+            # Kalo boolean
+            elif isinstance(v, bool):
+                flat[f"{k}={str(v)}"] = 1.0
+            # Kalo udh numerik gausah
+            elif isinstance(v, (int, float)):
+                flat[k] = float(v)
+        return flat
+
+    def _preprocess_X(self, X):
+        processed_X = []
+        for seq in X:
+            processed_seq = []
+            for features in seq:
+                processed_seq.append(self._flatten_features(features))
+            processed_X.append(processed_seq)
+        return processed_X
+
+    def _get_potentials(self, x, W_node, W_trans):
+        # Menghitung probabilitas kondisional p(y|x) dari label y terhadap data masukan x
+        # W_node bobot fitur node (lamda k)
+        # Kalau W_trans buat bobot fitur edge (lambda k')
+        N = len(x)
+        node_score = np.zeros((N, self.num_labels))
+        for t in range(N):
+            for feat, val in x[t].items():
+                if feat in self.feature_to_idx:
+                    feat_idx = self.feature_to_idx[feat]
+                    # Rumus Node: Sum k lambda k * fk (yt,x,t)
+                    node_score[t, :] += W_node[feat_idx, :] * val
+        
+        # Di logsumexp biar pas di lakuin exponen nilainya ga gede
+        node_shift = np.max(node_score, axis=1, keepdims=True)
+        # Rumus Node Potential: phi t (yt, x) = exp (Sum k lamda k fk)
+        node_potential = np.exp(node_score - node_shift)
+        
+        # Di logsumexp biar pas di lakuin exponen nilainya ga gede
+        edge_shift = np.max(W_trans)
+        # Rumus Edge Potential : psit(yt, yt+1, x) = exp(sum k' lambda k' fk'(yt, yt+1, x, t))
+        # Diabaikan token masukan (x) dan waktu (t) biar hanya menghitung transisi antar label
+        # Fitur fk' diasumsikan konstan (=1) untuk setiap pasangan label yang valid
+        # Sehingga persamaannya disederhanakan murni menjadi: exp(lambda k')
+        edge_potential = np.exp(W_trans - edge_shift)
+        
+        return node_potential, edge_potential, node_shift.flatten(), edge_shift
+
+    def _forward_backward(self, node_potential, edge_potential):
+        N = node_potential.shape[0]
+        Y = self.num_labels
+        
+        alpha = np.zeros((N, Y))
+        k = np.zeros(N) # Array untuk menyimpan Scaling Factor (kt)
+        
+        # Inisialisasi nilai forward pass pada urutan pertama (t=1)
+        # alpha 1 [y1] = phi 1 (y1,x)
+        alpha[0] = node_potential[0]
+        k[0] = np.sum(alpha[0])
+        # normalisasi untuk t=1
+        alpha[0] /= k[0] if k[0] != 0 else 1e-100
+
+        
+        for t in range(1, N):
+            # Menghitung nilai forward pass pada urutan ke-t (t >= 2) dengan scaling factor kt
+            # Rumus: alpha t[yt] = kt * sum yt-1 alpha t-1 [yt-1] * phi t(yt, x) * psi t-1 (yt-1, yt, x))
+            alpha[t] = np.dot(alpha[t-1], edge_potential) * node_potential[t]
+            k_t = np.sum(alpha[t])
+            # Menerapkan pembagian dengan scaling factor kt
+            alpha[t] /= k_t if k_t != 0 else 1e-100
+            k[t] = k_t
+            
+        beta = np.zeros((N, Y))
+        mu = np.zeros(N) # Array untuk menyimpan scaling factor mu t
+        
+        # Inisialisasi nilai backward pass pada urutan terakhir (t=T)
+        # Rumus: betaT[yT] = 1 / S (Di sini disederhanakan menjadi 1.0 sebelum scaling)
+        beta[N-1] = 1.0
+        mu_t = np.sum(beta[N-1])
+        # Normalisasi untuk t=T
+        beta[N-1] /= mu_t if mu_t != 0 else 1e-100
+        mu[N-1] = mu_t
+        
+        for t in range(N-2, -1, -1):
+            # Menghitung nilai backward pass pada urutan ke-t (t<T) dengan scaling factor mut
+            # Rumus: betat[yt] = mut * sum yt+1 (beta t+1 [yt+1] * phi t+1(yt+1, x) * psit(yt, yt+1, x))
+            beta[t] = np.dot(edge_potential, beta[t+1] * node_potential[t+1])
+            mu_t = np.sum(beta[t])
+            # Menerapkan pembagian dengan scaling factor mut
+            beta[t] /= mu_t if mu_t != 0 else 1e-100
+            mu[t] = mu_t
+            
+        # Menghitung fungsi normalisasi Z(x) dari distribusi probabilitas kondisional
+        # Rumus log Z(x) dihitung dengan mengakumulasikan nilai log dari seluruh scaling factor
+        Z_x = np.sum(np.log(k))
+        
+        return alpha, beta, k, mu, Z_x
+
+    def _marginal_probabilities(self, alpha, beta, node_potential, edge_potential):
+        N = alpha.shape[0]
+        Y = self.num_labels
+        
+        node_marginals = np.zeros((N, Y))
+        edge_marginals = np.zeros((N-1, Y, Y))
+        
+        for t in range(N):
+            # Menghitung probabilitas node yakni peluang kemunculan label kelas kata yt
+            # Rumus: P(yt|x) = (alpha t[yt] * beta t[yt]) / Z(x)
+            # Pembagian Z(x) ditangani oleh sum_node karena alpha dan beta sudah di-scale
+            node_marginals[t] = alpha[t] * beta[t]
+            sum_node = np.sum(node_marginals[t])
+            if sum_node > 0: node_marginals[t] /= sum_node
+            
+        for t in range(N - 1):
+            # Menghitung probabilitas edge yakni peluang transisi dari label yt ke yt+1.
+            # Rumus: P(yt, yt+1|x) = (alpha t * psi * phi t+1 * beta t+1) / Z(x)
+            edge_marg = np.outer(alpha[t], beta[t+1] * node_potential[t+1]) * edge_potential
+            sum_edge = np.sum(edge_marg)
+            if sum_edge > 0: edge_marg /= sum_edge
+            edge_marginals[t] = edge_marg
+            
+        return node_marginals, edge_marginals
+
+    def gradient(self, weights, proc_X, y_idx):
+        # Ekstrak matriks bobot lambda k dan lambda k'
+        W_node = weights[:self.num_features * self.num_labels].reshape((self.num_features, self.num_labels))
+        W_trans = weights[self.num_features * self.num_labels:].reshape((self.num_labels, self.num_labels))
+        
+        # Inisialisasi matriks gradien Gk dan G k'
+        grad_node = np.zeros_like(W_node)
+        grad_trans = np.zeros_like(W_trans)
+        
+        # Inisialisasi nilai Log-Likelihood
+        log_likelihood = 0.0
+        
+        for i in range(len(proc_X)):
+            x_seq = proc_X[i]
+            y_seq = y_idx[i]
+            N = len(x_seq)
+            
+            node_potential, edge_potential, node_shift, edge_shift = self._get_potentials(x_seq, W_node, W_trans)
+            alpha, beta, k, mu, Z_x_scaled = self._forward_backward(node_potential, edge_potential)
+            # Mengembalikan fungsi normalisasi Z(x) ke skala asli dari logsumexp 
+            Z_x = Z_x_scaled + np.sum(node_shift) + (N - 1) * edge_shift
+            node_marginals, edge_marginals = self._marginal_probabilities(alpha, beta, node_potential, edge_potential)
+        
+            # Rumus Empiris: sum t=1^T sum k lambda k fk(yt-1, yt, x, t)
+            seq_score = 0.0
+            for t in range(N):
+                y_t = y_seq[t]
+                for feat, val in x_seq[t].items():
+                    if feat in self.feature_to_idx:
+                        feat_id = self.feature_to_idx[feat]
+                        seq_score += W_node[feat_id, y_t] * val
+                        # Nilai observasi empiris untuk gradien Node
+                        grad_node[feat_id, y_t] -= val
+                        
+                if t > 0:
+                    y_prev = y_seq[t-1]
+                    seq_score += W_trans[y_prev, y_t]
+                    # Nilai observasi empiris untuk gradien Edge
+                    grad_trans[y_prev, y_t] -= 1.0
+            
+            for t in range(N):
+                # Menghitung nilai gradien ke-k untuk fungsi fitur node (Gkx).
+                for feat, val in x_seq[t].items():
+                    if feat in self.feature_to_idx:
+                        feat_id = self.feature_to_idx[feat]
+                        grad_node[feat_id, :] += node_marginals[t, :] * val
+                        
+            for t in range(N - 1):
+                # Menghitung nilai gradien ke-k' untuk fungsi fitur edge (Gk'x).
+                grad_trans += edge_marginals[t]
+
+            # Rumus Log-Likelihood: Skor Empiris - Normalisasi Z(x)
+            log_likelihood += seq_score - Z_x
+ 
+        sigma = self.l2_reg
+        # Penalti untuk mencegah overfitting sigma / 2 * sigma lambda^2
+        reg_loss = (sigma / 2.0) * np.sum(weights ** 2)
+        
+        # Menerapkan penalti regularisasi L2 pada gradien: Gk + sigma lambda k
+        grad_node += sigma * W_node
+        grad_trans += sigma * W_trans
+        
+        # Mengubah Log-Likelihood menjadi Negative Log-Likelihood (karena L-BFGS-B mencari nilai minimum)
+        total_loss = -log_likelihood + reg_loss
+        total_grad = np.concatenate([grad_node.flatten(), grad_trans.flatten()])
+        
+        
+        self.iter_count += 1
+        if self.iter_count % 10 == 0:
+            print(f"Iterasi ke-{self.iter_count} | NLL (Loss): {total_loss:.4f}")
+        
+        return total_loss, total_grad
+
+    def _viterbi_decoding(self, node_potential, edge_potential):
+        N = node_potential.shape[0]
+        Y = self.num_labels
+        
+        # V menyimpan viterbi forward pass (alpha t^max)
+        V = np.zeros((N, Y))
+        # Menyimpan jejak index buat backtracking
+        ptr = np.zeros((N, Y), dtype=int)
+        
+        log_node = np.log(np.clip(node_potential, 1e-100, None))
+        log_edge = np.log(np.clip(edge_potential, 1e-100, None))
+        
+        # Inisialisasi nilai Viterbi forward pass pada urutan pertama (t=1)
+        # Rumus: alpha1^max[y_1] = log(phi 1(y1))
+        V[0] = log_node[0]
+        
+        for t in range(1, N):
+            # Menghitung nilai Viterbi forward pass maksimum pada urutan t >= 2 hingga T
+            # Rumus: alphat^max [yt] = max yt-1 (alpha t-1^max[yt-1] + log psi + log phit)
+            for y in range(Y):
+                seq_probs = V[t-1] + log_edge[:, y] + log_node[t, y]
+                V[t, y] = np.max(seq_probs) # Mencari probabilitas terbesar
+                ptr[t, y] = np.argmax(seq_probs) # Menyimpan jalur asal dari probabilitas terbesar
+                
+        y_t_star = np.zeros(N, dtype=int)
+        
+        # Melakukan Viterbi backtracking untuk menentukan label akhir yang paling optimal (yt^*)
+        # Rumus: yt^* = argmaxyt (alphat^max[y_t])
+        y_t_star[N-1] = np.argmax(V[N-1])
+        for t in range(N-2, -1, -1):
+            y_t_star[t] = ptr[t+1, y_t_star[t+1]]
+            
+        return y_t_star
+
+    def fit(self, X, y):
+        self.iter_count = 0
+        self.feature_to_idx = {}
+        self.label_to_idx = {}
+        
+        for seq_y in y:
+            for label in seq_y:
+                if label not in self.label_to_idx:
+                    self.label_to_idx[label] = len(self.label_to_idx)
+                    
+        proc_X = self._preprocess_X(X)
+        for seq_x in proc_X:
+            for features in seq_x:
+                for feat in features.keys():
+                    if feat not in self.feature_to_idx:
+                        self.feature_to_idx[feat] = len(self.feature_to_idx)
+                        
+        self.idx_to_label = {v: k for k, v in self.label_to_idx.items()}
+        self.num_labels = len(self.label_to_idx)
+        self.num_features = len(self.feature_to_idx)
+        
+        y_idx = [[self.label_to_idx[label] for label in seq] for seq in y]
+        
+        initial_weights = np.zeros(self.num_features * self.num_labels + self.num_labels * self.num_labels)
+        
+        res = minimize(
+            fun=self.gradient,
+            x0=initial_weights,
+            args=(proc_X, y_idx),
+            method='L-BFGS-B',
+            jac=True,
+            options={'maxiter': self.max_iter, 'disp': True}
+        )
+        self.weights = res.x
+        return self
+        
+    def predict(self, X):
+        if self.weights is None:
+            raise ValueError("Model has not been trained yet.")
+        
+        W_node = self.weights[:self.num_features * self.num_labels].reshape((self.num_features, self.num_labels))
+        W_trans = self.weights[self.num_features * self.num_labels:].reshape((self.num_labels, self.num_labels))
+        
+        proc_X = self._preprocess_X(X)
+        y_pred = []
+        for x_seq in proc_X:
+            node_potential, edge_potential, _, _ = self._get_potentials(x_seq, W_node, W_trans)
+            y_t_star = self._viterbi_decoding(node_potential, edge_potential)
+            y_pred.append([self.idx_to_label[idx] for idx in y_t_star])
+        return y_pred
+
+
+_SPAN_LEADING_NOISE: set[str] = {
+    "reach", "enter", "access", "go", "get", "find", "unlock", "open",
+    "explore", "travel", "visit", "see", "do", "make", "take", "heading",
+    "near", "in", "at", "by", "from", "toward", "towards", "inside",
+    "outside", "around", "through", "across", "into", "onto", "upon",
+    "beside", "behind", "beyond", "between", "beneath", "under", "over",
+}
+
+
+def _strip_leading_noise(span: str) -> str:
+    tokens = span.split()
+    while tokens and tokens[0].lower() in _SPAN_LEADING_NOISE:
+        tokens = tokens[1:]
+    return " ".join(tokens).strip()
+
 
 def extract_crf_spans(tokens: list[str], predicted_tags: list[str]) -> list[str]:
     spans = []
@@ -240,11 +634,13 @@ def extract_crf_spans(tokens: list[str], predicted_tags: list[str]) -> list[str]
 
     deduplicated_spans = []
     for span in spans:
+        span = _strip_leading_noise(span)
         normalized_span = normalize_name(span)
         if normalized_span and normalized_span not in deduplicated_spans:
             deduplicated_spans.append(normalized_span)
 
     return deduplicated_spans
+
 
 def extract_exact_gazetteer_mentions(tokens: list[str], gazetteer_names: set[str], max_window: int = 8) -> list[str]:
     normalized_tokens = [normalize_name(token) for token in tokens]
@@ -273,103 +669,7 @@ def extract_exact_gazetteer_mentions(tokens: list[str], gazetteer_names: set[str
 
     return exact_mentions
 
-RESOLVER_STOPWORDS = {'the', 'in', 'of', 'to', 'and', 'a', 'an', 'on', 'at', 'for', 'near', 'through'}
-
-NON_LOCATION_QUERY_WORDS = {'about', 'access', 'also', 'boat', 'bro', 'can', 'cant', "can't", 'carry', 'difference', 'do', 'does', "doesn't", "don't", 'done', 'enter', 'explore', 'exploring', 'fast', 'find', 'fly', 'get', 'go', 'goes', 'going', 'guide', 'hard', 'harder', 'hate', 'help', 'how', 'inside', 'is', "isn't", 'it', "it's", 'journey', 'just', 'know', 'make', 'man', 'need', 'pls', 'please', 'quest', 'reach', 'route', 'run', 'someone', 'take', 'teleport', 'tf', 'than', 'that', 'there', 'tp', 'travel', 'traveling', 'trip', 'unlock', 'visit', 'visiting', 'walk', 'want', 'way', 'went', 'what', 'where', "won't"}
-
-GENERIC_GAZETTEER_TOKENS = {'bay', 'camp', 'camps', 'canyon', 'cave', 'city', 'cliff', 'coast', 'east', 'falls', 'forest', 'gate', 'hill', 'hills', 'inn', 'island', 'lake', 'mountain', 'mountains', 'mount', 'north', 'peak', 'plain', 'plains', 'port', 'river', 'ruins', 'site', 'south', 'strait', 'valley', 'village', 'west', 'sea', 'shrine', 'shrines', 'harbor', 'mine', 'mines', 'gorge', 'domain', 'realm', 'desert', 'institute', 'prison', 'fortress'}
-
-OVERLAP_MIN_SCORE = 0.5
-
-FUZZY_OVERLAP_MIN_SCORE = 0.45
-
-RAW_RESOLVED_NAME_FLOOR = 0.5
-
-AMBIGUITY_MARGIN = 0.1
-
-MAX_RESOLVER_CANDIDATES = 5
-
-ALIAS_CONFIDENCE = 0.98
-
-FUZZY_CONFIDENCE_PENALTY = 0.08
-
 MIN_FUZZY_TOKEN_LENGTH = 4
-
-def tokenise_for_overlap(text: str) -> list[str]:
-    normalized_text = normalize_name(text)
-    rough_tokens = re.split(r"[\s:\-]+", normalized_text)
-    cleaned_tokens = []
-    for token in rough_tokens:
-        cleaned = normalize_token(token)
-        if cleaned and cleaned not in RESOLVER_STOPWORDS and cleaned not in NON_LOCATION_QUERY_WORDS:
-            cleaned_tokens.append(cleaned)
-    return cleaned_tokens
-
-def explain_candidate_reason(overlap_count: int, overlap_ratio: float, overlap_tokens: list[str], method: str) -> str:
-    if method == "alias":
-        return "Matched curated alias entry."
-    if method == "exact":
-        return "Matched exact canonical gazetteer phrase."
-    if overlap_count == 0:
-        return "No meaningful token overlap."
-    return f"Matched {overlap_count} token(s): {overlap_tokens} with overlap ratio {overlap_ratio:.3f}."
-
-def score_overlap_candidate(raw_span: str, candidate_name: str) -> dict[str, object]:
-    raw_tokens = set(tokenise_for_overlap(raw_span))
-    candidate_tokens = set(tokenise_for_overlap(candidate_name))
-    overlap_tokens = sorted(raw_tokens & candidate_tokens)
-    overlap_count = len(overlap_tokens)
-    overlap_ratio = overlap_count / len(raw_tokens) if raw_tokens else 0.0
-
-    return {
-        "name": candidate_name,
-        "score": round(overlap_ratio, 3),
-        "overlap_count": overlap_count,
-        "overlap_ratio": round(overlap_ratio, 3),
-        "overlap_tokens": overlap_tokens,
-        "candidate_token_count": len(candidate_tokens),
-        "reason": explain_candidate_reason(overlap_count, overlap_ratio, overlap_tokens, "overlap"),
-    }
-
-def rank_overlap_candidates(raw_span: str, gazetteer_names: set[str], max_candidates: int = MAX_RESOLVER_CANDIDATES) -> list[dict[str, object]]:
-    scored_candidates = []
-    for candidate_name in gazetteer_names:
-        candidate_score = score_overlap_candidate(raw_span, candidate_name)
-        if candidate_score["overlap_count"] > 0:
-            scored_candidates.append(candidate_score)
-
-    scored_candidates.sort(
-        key=lambda item: (
-            item["overlap_count"],
-            item["overlap_ratio"],
-            -item["candidate_token_count"],
-            -len(item["name"]),
-        ),
-        reverse=True,
-    )
-    return scored_candidates[:max_candidates]
-
-def build_exact_entity(match_name: str) -> dict[str, object]:
-    return {
-        "raw_span": match_name,
-        "resolved_name": match_name,
-        "method": "exact",
-        "confidence": 1.0,
-        "ambiguous": False,
-        "candidates": [{"name": match_name, "score": 1.0, "reason": explain_candidate_reason(0, 1.0, [], "exact")}],
-        "fuzzy_corrections": [],
-    }
-
-def build_alias_entity(raw_span: str, resolved_name: str) -> dict[str, object]:
-    return {
-        "raw_span": raw_span,
-        "resolved_name": resolved_name,
-        "method": "alias",
-        "confidence": ALIAS_CONFIDENCE,
-        "ambiguous": False,
-        "candidates": [{"name": resolved_name, "score": ALIAS_CONFIDENCE, "reason": explain_candidate_reason(0, ALIAS_CONFIDENCE, [], "alias")}],
-        "fuzzy_corrections": [],
-    }
 
 def edit_distance(left: str, right: str) -> int:
     if left == right:
@@ -397,23 +697,17 @@ def get_max_edit_distance(token: str) -> int:
     return 2
 
 def get_common_prefix_length(left: str, right: str) -> int:
-    shared = 0
+    shared = 0 
     for left_char, right_char in zip(left, right):
         if left_char != right_char:
             break
         shared += 1
     return shared
 
-_FUZZY_CACHE = {}
-
-_FUZZY_CACHE = {}
-
 def find_best_token_correction(token: str, vocabulary: set[str]) -> dict[str, object] | None:
     normalized_token = normalize_token(token)
-    if len(normalized_token) < MIN_FUZZY_TOKEN_LENGTH or normalized_token in RESOLVER_STOPWORDS:
+    if len(normalized_token) < MIN_FUZZY_TOKEN_LENGTH:
         return None
-    if normalized_token in _FUZZY_CACHE:
-        return _FUZZY_CACHE[normalized_token]
     best_match = None
     best_distance = None
     best_prefix = -1
@@ -435,16 +729,16 @@ def find_best_token_correction(token: str, vocabulary: set[str]) -> dict[str, ob
             best_prefix = prefix
     if best_match is None or best_match == normalized_token:
         return None
-    _FUZZY_CACHE[normalized_token] = {
+    return {
         "original": normalized_token,
         "corrected": best_match,
         "distance": best_distance,
         "reason": f"Corrected '{normalized_token}' -> '{best_match}' (edit distance {best_distance}).",
     }
-    return _FUZZY_CACHE[normalized_token]
 
 def apply_fuzzy_token_corrections(raw_span: str, gazetteer_tokens: set[str]) -> tuple[str, list[dict[str, object]]]:
-    span_tokens = tokenise_for_overlap(raw_span)
+    normalized = normalize_name(raw_span)
+    span_tokens = [normalize_token(t) for t in normalized.split() if normalize_token(t)]
     corrected_tokens = []
     corrections = []
     for token in span_tokens:
@@ -457,208 +751,68 @@ def apply_fuzzy_token_corrections(raw_span: str, gazetteer_tokens: set[str]) -> 
     corrected_span = " ".join(corrected_tokens)
     return corrected_span, corrections
 
-def generate_alias_ngrams(tokens: list[str], max_n: int=4) -> list[str]:
-    normalized_tokens = [normalize_name(token) for token in tokens]
-    alias_ngrams = []
-    for start in range(len(normalized_tokens)):
-        current_tokens = []
-        for end in range(start, min(len(normalized_tokens), start + max_n)):
-            token = normalized_tokens[end]
-            if not token:
-                continue
-            current_tokens.append(token)
-            candidate = ' '.join(current_tokens)
-            if candidate and candidate not in alias_ngrams:
-                alias_ngrams.append(candidate)
-    return alias_ngrams
+import re as _re
 
-def detect_alias_matches(tokens: list[str], gazetteer_names: set[str]) -> list[dict[str, object]]:
-    all_candidates: list[str] = []
-    for alias_candidate in generate_alias_ngrams(tokens):
-        if alias_candidate not in ALIAS_MAP:
-            continue
-        alias_resolved_name = normalize_name(ALIAS_MAP[alias_candidate])
-        if alias_candidate in gazetteer_names and alias_resolved_name != alias_candidate:
-            continue
-        all_candidates.append(alias_candidate)
+def _expand_abbreviations(span: str) -> str:
+    return _re.sub(r'\b(mt|st|dr|ft)\b(?!\.)', r'\1.', span)
 
-    filtered_candidates = [
-        c for c in all_candidates
-        if not any(longer != c and longer.startswith(c + ' ') for longer in all_candidates)
-    ]
-
-    alias_entities = []
-    for alias_candidate in filtered_candidates:
-        alias_resolved_name = normalize_name(ALIAS_MAP[alias_candidate])
-        alias_entity = build_alias_entity(alias_candidate, alias_resolved_name)
-        overlap_candidates = rank_overlap_candidates(alias_candidate, gazetteer_names)
-        if len(tokenise_for_overlap(alias_candidate)) == 1 and len(overlap_candidates) > 1 and (abs(overlap_candidates[0]['score'] - overlap_candidates[1]['score']) <= AMBIGUITY_MARGIN):
-            alias_entity['ambiguous'] = True
-            alias_entity['candidates'] = overlap_candidates
-        alias_entities.append(alias_entity)
-    return alias_entities
-
-
-def build_overlap_entity(raw_span: str, overlap_candidates: list[dict[str, object]], method: str, confidence: float, ambiguous: bool, fuzzy_corrections: list[dict[str, object]] | None = None) -> dict[str, object]:
-    return {
-        "raw_span": normalize_name(raw_span),
-        "resolved_name": overlap_candidates[0]["name"],
-        "method": method,
-        "confidence": round(confidence, 3),
-        "ambiguous": ambiguous,
-        "candidates": overlap_candidates,
-        "fuzzy_corrections": fuzzy_corrections or [],
-    }
 
 def resolve_span_to_canonical(raw_span: str, gazetteer_names: set[str], gazetteer_tokens: set[str]) -> dict[str, object]:
     normalized_span = normalize_name(raw_span)
 
-    # 1. Exact match
-    if normalized_span in gazetteer_names:
-        return build_exact_entity(normalized_span)
+    core_span = _strip_leading_noise(normalized_span)
+    if not core_span:
+        core_span = normalized_span
 
-    # 2. Alias match
-    if normalized_span in ALIAS_MAP:
-        alias_entity = build_alias_entity(normalized_span, normalize_name(ALIAS_MAP[normalized_span]))
-        overlap_candidates = rank_overlap_candidates(normalized_span, gazetteer_names)
-        if (
-            len(tokenise_for_overlap(normalized_span)) == 1
-            and len(overlap_candidates) > 1
-            and abs(overlap_candidates[0]["score"] - overlap_candidates[1]["score"]) <= AMBIGUITY_MARGIN
-        ):
-            alias_entity["ambiguous"] = True
-            alias_entity["candidates"] = overlap_candidates
-        return alias_entity
+    core_tokens = core_span.split()
+    for length in range(len(core_tokens), 0, -1):
+        candidate = " ".join(core_tokens[:length])
+        expanded = _expand_abbreviations(candidate)
+        for c in ([expanded, candidate] if expanded != candidate else [candidate]):
+            # 1. Exact match
+            if c in gazetteer_names:
+                return {
+                    "raw_span": normalized_span,
+                    "resolved_name": c,
+                    "method": "exact",
+                    "fuzzy_corrections": [],
+                }
+            # 2. Alias match
+            if c in ALIAS_MAP:
+                return {
+                    "raw_span": normalized_span,
+                    "resolved_name": normalize_name(ALIAS_MAP[c]),
+                    "method": "alias",
+                    "fuzzy_corrections": [],
+                }
 
-    # 3. Overlap match
-    overlap_candidates = rank_overlap_candidates(normalized_span, gazetteer_names)
-    if overlap_candidates:
-        top_candidate = overlap_candidates[0]
-        confidence = top_candidate["score"]
-        ambiguous = (
-            len(overlap_candidates) > 1
-            and abs(top_candidate["score"] - overlap_candidates[1]["score"]) <= AMBIGUITY_MARGIN
-        )
-        non_generic_overlap = [t for t in top_candidate["overlap_tokens"] if t not in GENERIC_GAZETTEER_TOKENS]
-        has_meaningful_overlap = bool(non_generic_overlap) or len(tokenise_for_overlap(normalized_span)) == 1
-        if confidence >= OVERLAP_MIN_SCORE and has_meaningful_overlap:
-            return build_overlap_entity(normalized_span, overlap_candidates, "overlap", confidence, ambiguous)
+    corrected_span, fuzzy_corrections = apply_fuzzy_token_corrections(core_span, gazetteer_tokens)
+    if corrected_span and corrected_span != core_span and fuzzy_corrections:
+        corrected_expanded = _expand_abbreviations(corrected_span)
+        for c in ([corrected_expanded, corrected_span] if corrected_expanded != corrected_span else [corrected_span]):
+            if c in gazetteer_names:
+                return {
+                    "raw_span": normalized_span,
+                    "resolved_name": c,
+                    "method": "fuzzy",
+                    "fuzzy_corrections": fuzzy_corrections,
+                }
+            if c in ALIAS_MAP:
+                return {
+                    "raw_span": normalized_span,
+                    "resolved_name": normalize_name(ALIAS_MAP[c]),
+                    "method": "fuzzy",
+                    "fuzzy_corrections": fuzzy_corrections,
+                }
 
-    # 4. Fuzzy correction
-    corrected_span, fuzzy_corrections = apply_fuzzy_token_corrections(normalized_span, gazetteer_tokens)
-    if corrected_span and corrected_span != normalized_span and fuzzy_corrections:
-        # 4a. Check alias
-        if corrected_span in ALIAS_MAP:
-            alias_entity = build_alias_entity(normalized_span, normalize_name(ALIAS_MAP[corrected_span]))
-            alias_entity["method"] = "fuzzy_overlap"
-            alias_entity["confidence"] = round(ALIAS_CONFIDENCE - FUZZY_CONFIDENCE_PENALTY, 3)
-            alias_entity["fuzzy_corrections"] = fuzzy_corrections
-            alias_entity["candidates"] = [{
-                "name": alias_entity["resolved_name"],
-                "score": alias_entity["confidence"],
-                "reason": "Resolved after fuzzy correction + alias lookup.",
-            }]
-            return alias_entity
-        # 4b. Overlap
-        fuzzy_candidates = rank_overlap_candidates(corrected_span, gazetteer_names)
-        if fuzzy_candidates:
-            top_candidate = fuzzy_candidates[0]
-            confidence = max(top_candidate["score"] - FUZZY_CONFIDENCE_PENALTY, 0.0)
-            ambiguous = (
-                len(fuzzy_candidates) > 1
-                and abs(top_candidate["score"] - fuzzy_candidates[1]["score"]) <= AMBIGUITY_MARGIN
-            )
-            if confidence >= FUZZY_OVERLAP_MIN_SCORE and bool(top_candidate["overlap_tokens"]):
-                return build_overlap_entity(normalized_span, fuzzy_candidates, "fuzzy_overlap", confidence, ambiguous, fuzzy_corrections)
-
-    # 5. Raw 
-    final_candidates = overlap_candidates if overlap_candidates else []
     return {
         "raw_span": normalized_span,
-        "resolved_name": normalized_span,
+        "resolved_name": core_span,
         "method": "raw",
-        "confidence": round(final_candidates[0]["score"], 3) if final_candidates else 0.0,
-        "ambiguous": False,
-        "candidates": final_candidates,
-        "fuzzy_corrections": fuzzy_corrections if "fuzzy_corrections" in dir() else [],
+        "fuzzy_corrections": [],
     }
 
-def choose_preferred_entity(left: dict[str, object], right: dict[str, object]) -> dict[str, object]:
-    priority = {"exact": 5, "alias": 4, "overlap": 3, "fuzzy_overlap": 2, "raw": 1}
-    left_priority = priority[left["method"]]
-    right_priority = priority[right["method"]]
-    if left_priority != right_priority:
-        return left if left_priority > right_priority else right
-    if left["confidence"] != right["confidence"]:
-        return left if left["confidence"] > right["confidence"] else right
-    left_length = len(tokenise_for_overlap(left["resolved_name"]))
-    right_length = len(tokenise_for_overlap(right["resolved_name"]))
-    if left_length != right_length:
-        return left if left_length > right_length else right
-    return left
-
-def is_stronger_entity(left: dict[str, object], right: dict[str, object]) -> bool:
-    return choose_preferred_entity(left, right) is left
-
-def prune_dominated_entities(entities: list[dict[str, object]]) -> list[dict[str, object]]:
-    pruned_entities = []
-    for index, entity in enumerate(entities):
-        if entity["ambiguous"] or entity["method"] == "exact":
-            pruned_entities.append(entity)
-            continue
-
-        entity_tokens = set(tokenise_for_overlap(entity["resolved_name"]))
-        dominated = False
-        for other_index, other in enumerate(entities):
-            if index == other_index or other["method"] == "raw":
-                continue
-            other_tokens = set(tokenise_for_overlap(other["resolved_name"]))
-            if entity_tokens and entity_tokens < other_tokens and is_stronger_entity(other, entity):
-                dominated = True
-                break
-
-        if not dominated:
-            pruned_entities.append(entity)
-    return pruned_entities
-
-def merge_resolved_entities(entities: list[dict[str, object]]) -> list[dict[str, object]]:
-    merged_by_surface = {}
-    for entity in entities:
-        surface_key = normalize_name(entity["raw_span"])
-        existing = merged_by_surface.get(surface_key)
-        if existing is None:
-            merged_by_surface[surface_key] = entity
-        else:
-            merged_by_surface[surface_key] = choose_preferred_entity(existing, entity)
-
-    merged_by_name = {}
-    for entity in merged_by_surface.values():
-        resolved_key = entity["resolved_name"]
-        existing = merged_by_name.get(resolved_key)
-        if existing is None:
-            merged_by_name[resolved_key] = entity
-        else:
-            merged_by_name[resolved_key] = choose_preferred_entity(existing, entity)
-
-    merged_entities = list(merged_by_name.values())
-    return prune_dominated_entities(merged_entities)
-
-def should_include_resolved_name(entity: dict[str, object], entities: list[dict[str, object]]) -> bool:
-    if entity["method"] != "raw":
-        return True
-    if entity["confidence"] < RAW_RESOLVED_NAME_FLOOR:
-        return False
-
-    raw_tokens = set(tokenise_for_overlap(entity["raw_span"]))
-    for other in entities:
-        if other is entity or other["method"] == "raw":
-            continue
-        other_tokens = set(tokenise_for_overlap(other["resolved_name"]))
-        if raw_tokens and raw_tokens <= other_tokens and other["confidence"] >= entity["confidence"]:
-            return False
-    return True
-
-def resolve_query_locations(raw_text: str, model, gazetteer_names: set[str], gazetteer_tokens: set[str]) -> dict[str, object]:
+def resolve_query_locations(raw_text: str, model: LinearChainCRF, gazetteer_names: set[str], gazetteer_tokens: set[str]) -> dict[str, object]:
     tokens = tokenize_locations(raw_text)
     if not tokens:
         return {
@@ -678,36 +832,87 @@ def resolve_query_locations(raw_text: str, model, gazetteer_names: set[str], gaz
 
     crf_spans = extract_crf_spans(tokens, predicted_tags)
     exact_matches = extract_exact_gazetteer_mentions(tokens, gazetteer_names)
-    alias_entities = detect_alias_matches(tokens, gazetteer_names)
-    alias_matches = [entity["raw_span"] for entity in alias_entities]
 
-    entities = [build_exact_entity(match_name) for match_name in exact_matches]
-    entities.extend(alias_entities)
+    normalized_tokens = [normalize_name(t) for t in tokens]
+    all_alias_candidates: list[str] = []
+    for start in range(len(normalized_tokens)):
+        current_tokens = []
+        for end in range(start, min(len(normalized_tokens), start + 4)):
+            token = normalized_tokens[end]
+            if not token:
+                continue
+            current_tokens.append(token)
+            candidate = " ".join(current_tokens)
+            if candidate in ALIAS_MAP:
+                alias_resolved = normalize_name(ALIAS_MAP[candidate])
+                if candidate not in gazetteer_names or alias_resolved == candidate:
+                    if candidate not in all_alias_candidates:
+                        all_alias_candidates.append(candidate)
 
-    processed_spans = set(exact_matches + alias_matches)
-    for alias_span in alias_matches:
-        for tok in normalize_name(alias_span).split():
-            processed_spans.add(tok)
-
-    crf_spans_sorted = sorted(crf_spans, key=lambda s: len(tokenise_for_overlap(normalize_name(s))), reverse=True)
-    for span in crf_spans_sorted:
-        normalized_span = normalize_name(span)
-        if not normalized_span or normalized_span in processed_spans:
-            continue
-        span_toks = tokenise_for_overlap(normalized_span)
-        entity = resolve_span_to_canonical(normalized_span, gazetteer_names, gazetteer_tokens)
-        entities.append(entity)
-        if entity["method"] != "raw" or entity["confidence"] >= RAW_RESOLVED_NAME_FLOOR:
-            processed_spans.add(normalized_span)
-            for tok in span_toks:
-                processed_spans.add(tok)
-
-    merged_entities = merge_resolved_entities(entities)
-    resolved_names = [
-        entity["resolved_name"]
-        for entity in merged_entities
-        if should_include_resolved_name(entity, merged_entities)
+    alias_matches = [
+        c for c in all_alias_candidates
+        if not any(longer != c and longer.startswith(c + " ") for longer in all_alias_candidates)
     ]
+
+    candidate_entities: list[dict] = []
+
+    for match_name in exact_matches:
+        candidate_entities.append({
+            "raw_span": match_name,
+            "resolved_name": match_name,
+            "method": "exact",
+            "fuzzy_corrections": [],
+        })
+
+    for alias_span in alias_matches:
+        resolved_name = normalize_name(ALIAS_MAP[alias_span])
+        candidate_entities.append({
+            "raw_span": alias_span,
+            "resolved_name": resolved_name,
+            "method": "alias",
+            "fuzzy_corrections": [],
+        })
+
+    for span in crf_spans:
+        normalized_span = normalize_name(span)
+        if not normalized_span:
+            continue
+        entity = resolve_span_to_canonical(normalized_span, gazetteer_names, gazetteer_tokens)
+        candidate_entities.append(entity)
+
+    candidate_entities.sort(key=lambda e: len(e["resolved_name"]), reverse=True)
+
+    entities: list[dict] = []
+    seen_resolved: set[str] = set()
+    seen_tokens: set[str] = set()   
+
+    for entity in candidate_entities:
+        rname = entity["resolved_name"]
+        if rname in seen_resolved:
+            continue
+        rname_tokens = set(rname.split())
+        if rname_tokens and rname_tokens <= seen_tokens:
+            continue
+        entities.append(entity)
+        seen_resolved.add(rname)
+        seen_tokens.update(rname_tokens)
+
+    def _span_position(entity: dict) -> int:
+        span_toks = entity["raw_span"].split()
+        n = len(span_toks)
+        for idx in range(len(normalized_tokens) - n + 1):
+            if normalized_tokens[idx:idx + n] == span_toks:
+                return idx
+        span_toks = entity["resolved_name"].split()
+        n = len(span_toks)
+        for idx in range(len(normalized_tokens) - n + 1):
+            if normalized_tokens[idx:idx + n] == span_toks:
+                return idx
+        return len(normalized_tokens)
+
+    entities.sort(key=_span_position)
+
+    resolved_names = [e["resolved_name"] for e in entities]
 
     return {
         "query": raw_text,
@@ -716,28 +921,13 @@ def resolve_query_locations(raw_text: str, model, gazetteer_names: set[str], gaz
         "crf_spans": crf_spans,
         "exact_matches": exact_matches,
         "alias_matches": alias_matches,
-        "entities": merged_entities,
+        "entities": entities,
         "resolved_names": resolved_names,
     }
 
-def extract_locations(raw_text: str, model, gazetteer_names: set[str], gazetteer_tokens: set[str]) -> list[str]:
-    return resolve_query_locations(raw_text, model, gazetteer_names, gazetteer_tokens)['resolved_names']
 
-def print_query_resolution(query_text: str, title: str) -> None:
-    resolution = resolve_query_locations(query_text, crf_model, gazetteer_names, gazetteer_tokens)
-    print(f'\\n{title} before inference:', resolution['query'])
-    print(f'{title} after tokenization:', resolution['tokens'])
-    print(f'{title} CRF tags:', resolution['crf_tags'])
-    print(f'{title} exact gazetteer matches:', resolution['exact_matches'])
-    print(f'{title} alias matches:', resolution['alias_matches'])
-    print(f'{title} CRF spans:', resolution['crf_spans'])
-    print(f'{title} structured entities:')
-    for entity in resolution['entities']:
-        print(entity)
-        if entity['fuzzy_corrections']:
-            print('  fuzzy corrections:', entity['fuzzy_corrections'])
-        print('  overlap candidates + scores:', entity['candidates'])
-    print(f'{title} extracted locations:', resolution['resolved_names'])
+def extract_locations(raw_text: str, model: LinearChainCRF, gazetteer_names: set[str], gazetteer_tokens: set[str]) -> list[str]:
+    return resolve_query_locations(raw_text, model, gazetteer_names, gazetteer_tokens)["resolved_names"]
 
 
 # Load model and gazetteer paths
@@ -749,6 +939,8 @@ print(f"Loading Gazetteer from {GAZETTEER_PATH}")
 gazetteer_names, gazetteer_tokens = load_gazetteer(str(GAZETTEER_PATH))
 
 print(f"Loading Model from {MODEL_PATH}")
+import __main__
+__main__.LinearChainCRF = LinearChainCRF
 with open(MODEL_PATH, 'rb') as f:
     crf_model = pickle.load(f)
 
@@ -763,6 +955,8 @@ def extract():
         locations = extract_locations(text, crf_model, gazetteer_names, gazetteer_tokens)
         return jsonify({'locations': locations})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
