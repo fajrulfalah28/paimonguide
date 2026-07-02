@@ -502,11 +502,6 @@ class LinearChainCRF:
         total_loss = -log_likelihood + reg_loss
         total_grad = np.concatenate([grad_node.flatten(), grad_trans.flatten()])
         
-        
-        self.iter_count += 1
-        if self.iter_count % 10 == 0:
-            print(f"Iterasi ke-{self.iter_count} | NLL (Loss): {total_loss:.4f}")
-        
         return total_loss, total_grad
 
     def _viterbi_decoding(self, node_potential, edge_potential):
@@ -544,7 +539,6 @@ class LinearChainCRF:
         return y_t_star
 
     def fit(self, X, y):
-        self.iter_count = 0
         self.feature_to_idx = {}
         self.label_to_idx = {}
         
@@ -593,7 +587,6 @@ class LinearChainCRF:
             y_t_star = self._viterbi_decoding(node_potential, edge_potential)
             y_pred.append([self.idx_to_label[idx] for idx in y_t_star])
         return y_pred
-
 
 _SPAN_LEADING_NOISE: set[str] = {
     "reach", "enter", "access", "go", "get", "find", "unlock", "open",
@@ -930,7 +923,6 @@ def extract_locations(raw_text: str, model: LinearChainCRF, gazetteer_names: set
     return resolve_query_locations(raw_text, model, gazetteer_names, gazetteer_tokens)["resolved_names"]
 
 
-# Load model and gazetteer paths
 BASE_DIR = Path('../').resolve()
 GAZETTEER_PATH = BASE_DIR / 'genshin_areas.json'
 MODEL_PATH = BASE_DIR / 'outputs' / 'genshin_location_crf.pkl'

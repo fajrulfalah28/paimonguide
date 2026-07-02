@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  ner-service:
+    build:
+      context: ./ner-service
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHON_VERSION=3.10.0
+
+  paimon-guide:
+    build:
+      context: ./paimon-guide
+    ports:
+      - "10000:10000"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=sqlite
+      - NER_SERVICE_URL=http://ner-service:5000/extract
+    depends_on:
+      - ner-service
